@@ -1,0 +1,22 @@
+# ห้ามส่งความลับเข้า image — ส่งตอนรันผ่าน env_file แทน
+.env
+.env.*
+!.env.example
+!.env.docker.example
+
+node_modules
+.next
+out
+*.tsbuildinfo
+next-env.d.ts
+npm-debug.log*
+
+.git
+.gitignore
+.vscode
+.claude
+*.sql.bak
+hisreport_app*.sql
+docker-compose*.yml
+Dockerfile
+.dockerignore

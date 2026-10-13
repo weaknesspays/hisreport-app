@@ -1,0 +1,54 @@
+# ระบบรายงาน HIS — app + ฐานข้อมูลของระบบ (MySQL 8)
+# ใช้: copy .env.docker.example .env.docker → แก้ค่า → docker compose up -d --build
+# เปิด: http://<เครื่อง>:3000/hisreport-app
+#
+# ฐาน HIS (10.0.0.8) อยู่นอก Docker — container ออกไปหาได้ผ่านเครือข่ายของเครื่อง host
+
+services:
+  app:
+    build: .
+    image: hisreport-app:latest
+    container_name: hisreport-app
+    restart: unless-stopped
+    env_file: .env.docker
+    environment:
+      # ต่อฐานของระบบใน container "db" เสมอ (ทับค่าใน .env.docker)
+      APP_DB_HOST: db
+      APP_DB_PORT: "3306"
+      TZ: Asia/Bangkok
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "5" }
+
+  db:
+    image: mysql:8.0
+    container_name: hisreport-db
+    restart: unless-stopped
+    env_file: .env.docker      # ใช้ MYSQL_ROOT_PASSWORD / MYSQL_PASSWORD
+    environment:
+      MYSQL_DATABASE: hisreport_app
+      MYSQL_USER: hisreport
+      TZ: Asia/Bangkok
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-time-zone=+07:00
+    volumes:
+      - hisreport-db:/var/lib/mysql
+    # ไม่เปิด port ออกนอกเครื่อง — ถ้าต้องการเข้าด้วย phpMyAdmin/โปรแกรมอื่น ให้เปิดบรรทัดล่าง (ใช้ port 3307 กันชน MySQL ของ AppServ)
+    # ports:
+    #   - "127.0.0.1:3307:3306"
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+volumes:
+  hisreport-db:

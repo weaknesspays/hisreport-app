@@ -1,0 +1,181 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { Check, ChevronsUpDown, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { addDays, fiscalRange, fiscalYearOf, ymd } from "@/lib/dates";
+import { api } from "@/lib/config";
+import type { ParamDef, ParamValue, ParamValues } from "@/lib/report-types";
+import { cn } from "@/lib/utils";
+
+function presets(today = ymd(new Date())) {
+  const [y, m] = today.split("-").map(Number);
+  const monthStart = today.slice(0, 8) + "01";
+  const prevMonthEnd = addDays(monthStart, -1);
+  const prevMonthStart = prevMonthEnd.slice(0, 8) + "01";
+  const qStartMonth = [10, 11, 12].includes(m) ? 10 : m <= 3 ? 1 : m <= 6 ? 4 : 7;
+  const qStart = `${y}-${String(qStartMonth).padStart(2, "0")}-01`;
+  const fy = fiscalYearOf(today);
+  const cur = fiscalRange(fy);
+  return [
+    { label: "วันนี้", start: today, end: today },
+    { label: "เดือนนี้", start: monthStart, end: today },
+    { label: "เดือนก่อน", start: prevMonthStart, end: prevMonthEnd },
+    { label: "ไตรมาสนี้", start: qStart, end: today },
+    { label: `ปีงบ ${fy}`, start: cur.start, end: today },
+    ...Array.from({ length: FY_BACK }, (_, i) => {
+      const r = fiscalRange(fy - 1 - i);
+      return { label: `ปีงบ ${fy - 1 - i}`, start: r.start, end: r.end };
+    }),
+  ];
+}
+
+/** จำนวนปีงบย้อนหลังที่ให้เลือก (ไม่รวมปีปัจจุบัน) */
+const FY_BACK = 5;
+
+function useOptions(reportId: number, def: ParamDef, latest: boolean) {
+  const [opts, setOpts] = useState(def.options ?? []);
+  useEffect(() => {
+    if (def.type !== "select_sql") return;
+    let alive = true;
+    // reportId = 0 → หน้าแก้ไขรายงาน: โหลดจากนิยามตัวแปรที่ยังไม่บันทึก
+    const req = reportId === 0
+      ? fetch(api("/admin/test"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ params: [def], optionsFor: def.name }) })
+      : fetch(api(`/reports/${reportId}/options?param=${encodeURIComponent(def.name)}${latest ? "&latest=1" : ""}`));
+    req.then((r) => r.json()).then((d) => { if (alive && d.options) setOpts(d.options); }).catch(() => {});
+    return () => { alive = false; };
+  }, [reportId, def, latest]);
+  return opts;
+}
+
+function MultiSelect({ options, value, onChange, placeholder }: { options: { value: string; label: string }[]; value: string[]; onChange: (v: string[]) => void; placeholder: string }) {
+  const [open, setOpen] = useState(false);
+  const label = (v: string) => options.find((o) => o.value === v)?.label ?? v;
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="outline" className="h-auto min-h-9 w-full min-w-56 justify-between font-normal">
+          <span className="flex flex-wrap gap-1">
+            {value.length ? value.map((v) => (
+              <Badge key={v} variant="secondary" className="gap-1">
+                {label(v)}
+                <X className="size-3 cursor-pointer" onClick={(e) => { e.stopPropagation(); onChange(value.filter((x) => x !== v)); }} />
+              </Badge>
+            )) : <span className="text-muted-foreground">{placeholder}</span>}
+          </span>
+          <ChevronsUpDown className="size-4 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-72 p-0" align="start">
+        <Command>
+          <CommandInput placeholder="ค้นหา…" />
+          <CommandList>
+            <CommandEmpty>ไม่พบ</CommandEmpty>
+            <CommandGroup>
+              {options.map((o) => {
+                const on = value.includes(o.value);
+                return (
+                  <CommandItem key={o.value} value={`${o.label} ${o.value}`} onSelect={() => onChange(on ? value.filter((x) => x !== o.value) : [...value, o.value])}>
+                    <Check className={cn("size-4", on ? "opacity-100" : "opacity-0")} />
+                    <span className="truncate">{o.label}</span>
+                    <span className="ml-auto text-xs text-muted-foreground">{o.value}</span>
+                  </CommandItem>
+                );
+              })}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function Field({ reportId, def, value, onChange, latest }: { reportId: number; def: ParamDef; value: ParamValue; onChange: (v: ParamValue) => void; latest: boolean }) {
+  const opts = useOptions(reportId, def, latest);
+  const [picked, setPicked] = useState<string | null>(null);
+  const label = <Label className="text-xs text-muted-foreground">{def.label}{def.required && <span className="text-destructive"> *</span>}</Label>;
+
+  if (def.type === "daterange") {
+    const v = (value && typeof value === "object" && !Array.isArray(value) ? value : { start: "", end: "" });
+    // ช่วงเดียวกันอาจตรงหลายปุ่ม (ต้นเดือน ต.ค. = เดือนนี้ = ไตรมาสนี้ = ปีงบนี้) → ไฮไลต์ปุ่มที่กดล่าสุด หรือปุ่มแรกที่ตรง
+    const list = presets();
+    const matches = list.filter((p) => v.start === p.start && v.end === p.end).map((p) => p.label);
+    const active = picked && matches.includes(picked) ? picked : matches[0];
+    return (
+      <div className="space-y-1.5">
+        {label}
+        <div className="flex flex-wrap items-center gap-2">
+          <Input type="date" className="w-40" value={v.start} onChange={(e) => onChange({ ...v, start: e.target.value })} />
+          <span className="text-muted-foreground">ถึง</span>
+          <Input type="date" className="w-40" value={v.end} onChange={(e) => onChange({ ...v, end: e.target.value })} />
+        </div>
+        <div className="flex flex-wrap gap-1">
+          {list.map((p) => (
+            <Button key={p.label} type="button" size="sm" variant={p.label === active ? "default" : "outline"} className="h-7 rounded-full px-2.5 text-xs"
+              onClick={() => { setPicked(p.label); onChange({ start: p.start, end: p.end }); }}>{p.label}</Button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  if (def.type === "date") {
+    return <div className="space-y-1.5">{label}<Input type="date" className="w-40" value={String(value ?? "")} onChange={(e) => onChange(e.target.value)} /></div>;
+  }
+  if (def.type === "fiscal_year") {
+    const fy = fiscalYearOf(ymd(new Date()));
+    return (
+      <div className="space-y-1.5">{label}
+        <Select value={String(value ?? fy)} onValueChange={onChange}>
+          <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+          <SelectContent>{Array.from({ length: FY_BACK * 2 + 1 }, (_, i) => String(fy - i)).map((y) => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent>
+        </Select>
+      </div>
+    );
+  }
+  if (def.type === "select" || def.type === "select_sql") {
+    if (def.multiple) {
+      return <div className="space-y-1.5">{label}<MultiSelect options={opts} value={Array.isArray(value) ? value : []} onChange={onChange} placeholder={def.required ? "เลือก…" : "ทั้งหมด (ไม่กรอง)"} /></div>;
+    }
+    return (
+      <div className="space-y-1.5">{label}
+        <Select value={String(value ?? "")} onValueChange={(v) => onChange(v === "__all" ? "" : v)}>
+          <SelectTrigger className="min-w-48"><SelectValue placeholder={def.required ? "เลือก…" : "ทั้งหมด"} /></SelectTrigger>
+          <SelectContent>
+            {!def.required && <SelectItem value="__all">ทั้งหมด</SelectItem>}
+            {opts.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
+    );
+  }
+  // icd10 / text / number — หลายค่าคั่นด้วย ,
+  const text = Array.isArray(value) ? value.join(",") : String(value ?? "");
+  return (
+    <div className="space-y-1.5">{label}
+      <Input
+        className={def.type === "icd10" ? "w-28 uppercase" : "w-44"}
+        inputMode={def.type === "number" ? "decimal" : undefined}
+        placeholder={def.multiple ? "คั่นหลายค่าด้วย ," : def.type === "icd10" ? "เช่น I10" : ""}
+        value={text}
+        onChange={(e) => onChange(def.multiple ? e.target.value.split(",").map((s) => s.trim()).filter(Boolean) : e.target.value)}
+      />
+    </div>
+  );
+}
+
+export function ParamForm({ reportId, defs, values, onChange, latest = false }: { reportId: number; defs: ParamDef[]; values: ParamValues; onChange: (v: ParamValues) => void; latest?: boolean }) {
+  if (!defs.length) return <p className="text-sm text-muted-foreground">รายงานนี้ไม่มีเงื่อนไขให้เลือก</p>;
+  return (
+    <div className="flex flex-wrap items-end gap-x-5 gap-y-3">
+      {defs.map((d) => (
+        <Field key={d.name} reportId={reportId} def={d} latest={latest} value={values[d.name] ?? null} onChange={(v) => onChange({ ...values, [d.name]: v })} />
+      ))}
+    </div>
+  );
+}

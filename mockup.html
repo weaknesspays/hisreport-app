@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HIS Report — ต้นแบบหน้าจอ v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+    --bg: #f3f6fa; --panel: #fff; --line: #dfe5ee; --text: #1c2633; --muted: #627083;
+    --primary: #1b64b5; --primary-soft: #e6f0fb; --teal: #0f8b8d; --amber: #c27c0e; --red: #c0392b; --green: #1e8e4f;
+    --side: #12324f; --side-text: #c9d6e4; --side-active: #1b64b5;
+    --radius: 10px; --shadow: 0 1px 3px rgba(20,40,70,.08);
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: 'Sarabun', Tahoma, sans-serif; font-size: 15px; color: var(--text); background: var(--bg); }
+a { color: var(--primary); }
+button, input, select, textarea { font: inherit; }
+code { background: #eef2f7; padding: 0 4px; border-radius: 4px; font-size: 13px; }
+
+.app { display: grid; grid-template-columns: 250px 1fr; min-height: 100vh; }
+.side { background: var(--side); color: var(--side-text); padding: 14px 10px; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+.brand { display: flex; align-items: center; gap: 10px; padding: 6px 10px 16px; color: #fff; font-weight: 700; font-size: 18px; }
+.brand .logo { width: 34px; height: 34px; border-radius: 8px; background: var(--teal); display: grid; place-items: center; font-size: 15px; color: #fff; }
+.side h4 { font-size: 12px; letter-spacing: .06em; color: #7f97b0; margin: 16px 10px 6px; font-weight: 600; }
+.nav a { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 8px; color: var(--side-text); text-decoration: none; margin: 1px 0; font-size: 14.5px; }
+.nav a:hover { background: rgba(255,255,255,.07); }
+.nav a.active { background: var(--side-active); color: #fff; }
+.nav .ic { width: 20px; text-align: center; }
+.nav .count { margin-left: auto; font-size: 12px; background: rgba(255,255,255,.12); padding: 0 7px; border-radius: 10px; }
+.nav .badge { margin-left: auto; font-size: 11px; background: var(--amber); color: #fff; padding: 0 7px; border-radius: 10px; }
+.main { min-width: 0; }
+.top { display: flex; align-items: center; gap: 12px; padding: 10px 22px; background: var(--panel); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 5; }
+.top .title { font-weight: 600; font-size: 17px; }
+.top .spacer { flex: 1; }
+.search { padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; width: 260px; }
+.demo-role { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); background: #fff8e6; border: 1px dashed #e3b85c; padding: 4px 8px; border-radius: 8px; }
+.user { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--primary-soft); color: var(--primary); display: grid; place-items: center; font-weight: 700; }
+.content { padding: 20px 22px 40px; max-width: 1400px; }
+.menu-btn { display: none; }
+
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+.card-h { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.card-h h3 { margin: 0; font-size: 16px; }
+.card-h .spacer { flex: 1; }
+.card-b { padding: 14px 16px; }
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 8px; border: 1px solid var(--primary); background: var(--primary); color: #fff; cursor: pointer; font-size: 14px; text-decoration: none; white-space: nowrap; }
+.btn.alt { background: #fff; color: var(--primary); }
+.btn.ghost { background: transparent; border-color: var(--line); color: var(--text); }
+.btn.green { background: var(--green); border-color: var(--green); }
+.btn.sm { padding: 4px 10px; font-size: 13px; }
+.btn.danger { background: #fff; color: var(--red); border-color: #efc4bf; }
+.preset { border: 1px solid var(--line); background: #fff; border-radius: 14px; padding: 3px 10px; font-size: 13px; cursor: pointer; }
+.preset.on { background: var(--primary-soft); border-color: var(--primary); color: var(--primary); }
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin-bottom: 16px; }
+.field { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+.field input, .field select, .field textarea { padding: 7px 9px; border: 1px solid var(--line); border-radius: 7px; background: #fff; color: var(--text); font-size: 14px; }
+.grid { display: grid; gap: 16px; }
+.g2 { grid-template-columns: repeat(2, minmax(0,1fr)); }
+.g3 { grid-template-columns: repeat(3, minmax(0,1fr)); }
+.g4 { grid-template-columns: repeat(4, minmax(0,1fr)); }
+.span2 { grid-column: span 2; }
+.span-all { grid-column: 1 / -1; }
+.chip { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 10px; background: var(--primary-soft); color: var(--primary); margin: 1px 2px; white-space: nowrap; }
+.chip.teal { background: #e0f4f3; color: var(--teal); }
+.chip.amber { background: #fdf1dc; color: var(--amber); }
+.chip.red { background: #fbe7e5; color: var(--red); }
+.chip.green { background: #e2f4ea; color: var(--green); }
+.chip.gray { background: #eef1f5; color: var(--muted); }
+.chip.x { cursor: pointer; }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+.note { background: #f6f9fd; border: 1px solid #d8e5f4; border-left: 4px solid var(--primary); padding: 10px 14px; border-radius: 8px; font-size: 14px; color: #33475e; margin-bottom: 16px; }
+.note.warn { background: #fffaf0; border-color: #f0dcb2; border-left-color: var(--amber); }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 14px; flex-wrap: wrap; }
+.tabs button { border: 0; background: none; padding: 8px 14px; cursor: pointer; color: var(--muted); border-bottom: 2px solid transparent; font-size: 14px; }
+.tabs button.on { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+.tbl-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { border-bottom: 1px solid var(--line); padding: 7px 9px; text-align: left; vertical-align: top; }
+th { background: #f5f8fc; font-weight: 600; color: #3a4a5e; white-space: nowrap; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+td.c, th.c { text-align: center; }
+table.bordered th, table.bordered td { border: 1px solid #cfd7e2; }
+tr.total td { background: #f5f8fc; font-weight: 700; border-top: 2px solid #cfd7e2; }
+.drill { color: var(--primary); text-decoration: underline dotted; cursor: pointer; }
+.bar-cell { display: flex; align-items: center; gap: 6px; justify-content: flex-end; }
+.bar-cell i { display: inline-block; height: 8px; background: #b8d3f0; border-radius: 4px; }
+
+.kpi { padding: 14px 16px; }
+.kpi .lbl { color: var(--muted); font-size: 13px; display: flex; justify-content: space-between; gap: 8px; }
+.kpi .val { font-size: 28px; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.kpi .sub { font-size: 13px; color: var(--muted); }
+.kpi .up { color: var(--green); } .kpi .down { color: var(--red); }
+.kpi .target { margin-top: 8px; font-size: 12.5px; }
+.meter { height: 6px; background: #edf1f6; border-radius: 4px; margin-top: 4px; overflow: hidden; }
+.meter i { display: block; height: 100%; border-radius: 4px; }
+
+.chart svg { width: 100%; height: auto; display: block; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 13px; color: var(--muted); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+
+.modal-bg { position: fixed; inset: 0; background: rgba(15,30,50,.45); display: none; align-items: flex-start; justify-content: center; padding: 50px 16px; z-index: 50; overflow-y: auto; }
+.modal-bg.show { display: flex; }
+.modal { background: #fff; border-radius: 12px; width: 100%; max-width: 720px; box-shadow: 0 10px 40px rgba(0,0,0,.2); }
+.modal .card-b { max-height: 62vh; overflow-y: auto; }
+.modal-f { padding: 12px 16px; border-top: 1px solid var(--line); display: flex; justify-content: flex-end; gap: 8px; }
+.pick-group { margin-bottom: 12px; }
+.pick-group h5 { margin: 0 0 6px; font-size: 14px; }
+.pick { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; margin-bottom: 5px; cursor: pointer; flex-wrap: wrap; }
+.pick .spacer { flex: 1; }
+
+.sql { font-family: Consolas, 'Courier New', monospace; font-size: 13px; background: #0f1c2b; color: #d8e6f5; border-radius: 8px; padding: 12px; min-height: 260px; width: 100%; border: 1px solid #22344a; line-height: 1.55; }
+.ptbl input, .ptbl select { width: 100%; padding: 5px 7px; border: 1px solid var(--line); border-radius: 6px; font-size: 13px; min-width: 70px; }
+.disp-opt { border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+.disp-opt.on { border-color: var(--primary); background: #f7fbff; }
+.disp-opt label.head { display: flex; gap: 8px; align-items: center; font-weight: 600; cursor: pointer; }
+.disp-opt .cfg { margin-top: 10px; display: grid; gap: 8px; }
+.matrix td, .matrix th { text-align: center; }
+.matrix td:first-child, .matrix th:first-child { text-align: left; }
+.matrix input { width: 17px; height: 17px; }
+.timeline { border-left: 2px solid var(--line); margin-left: 6px; padding-left: 14px; }
+.timeline div { position: relative; margin-bottom: 12px; font-size: 14px; }
+.timeline div::before { content: ''; position: absolute; left: -21px; top: 5px; width: 10px; height: 10px; border-radius: 50%; background: var(--primary); }
+.status-flow { display: flex; gap: 4px; flex-wrap: wrap; }
+.status-flow span { padding: 3px 10px; border-radius: 14px; background: #eef1f5; font-size: 12.5px; color: var(--muted); }
+.status-flow span.done { background: #e2f4ea; color: var(--green); }
+.status-flow span.now { background: var(--primary); color: #fff; }
+.spec h3 { margin: 18px 0 6px; font-size: 16px; }
+.spec ul { margin: 4px 0; padding-left: 20px; }
+.spec li { margin: 3px 0; }
+.er { font-family: Consolas, monospace; font-size: 12.5px; background: #f7f9fc; border: 1px solid var(--line); border-radius: 8px; padding: 12px; white-space: pre; overflow-x: auto; line-height: 1.5; }
+
+.login-wrap { min-height: 100vh; display: grid; place-items: center; background: linear-gradient(135deg, #12324f, #1b64b5 60%, #0f8b8d); padding: 16px; }
+.login { width: 100%; max-width: 380px; background: #fff; border-radius: 14px; padding: 28px; box-shadow: 0 20px 50px rgba(0,0,0,.25); }
+.login h2 { margin: 6px 0 2px; }
+.login .field { margin-top: 12px; }
+.toast { position: fixed; right: 20px; bottom: 20px; background: #1d2b3a; color: #fff; padding: 10px 16px; border-radius: 8px; opacity: 0; transform: translateY(10px); transition: .2s; z-index: 60; font-size: 14px; max-width: 420px; }
+.toast.show { opacity: 1; transform: none; }
+.page { display: none; }
+.page.show { display: block; }
+.hide { display: none !important; }
+
+@media (max-width: 1100px) { .g4 { grid-template-columns: repeat(2, minmax(0,1fr)); } .search { width: 160px; } }
+@media (max-width: 860px) {
+    .app { grid-template-columns: 1fr; }
+    .side { position: fixed; left: -260px; width: 250px; z-index: 40; transition: left .2s; }
+    .side.open { left: 0; }
+    .menu-btn { display: inline-flex; }
+    .g2, .g3, .g4 { grid-template-columns: 1fr; }
+    .span2 { grid-column: auto; }
+    .content { padding: 16px; }
+    .top { padding: 10px 16px; flex-wrap: wrap; }
+    .search { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- ===================== LOGIN ===================== -->
+<div id="loginPage" class="login-wrap">
+    <div class="login">
+        <div class="brand" style="color:var(--text);padding:0"><div class="logo">HR</div>HIS Report</div>
+        <h2>เข้าสู่ระบบ</h2>
+        <div class="muted small">ใช้ชื่อผู้ใช้และรหัสผ่านเดียวกับโปรแกรม HIS</div>
+        <div class="field"><span>ชื่อผู้ใช้ HIS</span><input value="admin"></div>
+        <div class="field"><span>รหัสผ่าน</span><input type="password" value="123456"></div>
+        <button class="btn" style="width:100%;justify-content:center;margin-top:18px" onclick="login()">เข้าสู่ระบบ</button>
+        <p class="muted small" style="margin-top:14px">ต้นแบบหน้าจอ v2 — กดเข้าสู่ระบบได้เลย ข้อมูลทั้งหมดเป็นตัวอย่าง<br>ผู้ใช้ HIS ที่ยังไม่ถูกเพิ่มเข้าระบบ จะเข้าได้แต่ไม่เห็นหัวข้อรายงานใด (รอแอดมินกำหนด Role)</p>
+    </div>
+</div>
+
+<!-- ===================== APP ===================== -->
+<div id="appShell" class="app hide">
+    <aside class="side" id="side">
+        <div class="brand"><div class="logo">HR</div>HIS Report</div>
+        <nav class="nav">
+            <a href="#dashboard" data-page="dashboard"><span class="ic">▦</span>Dashboard</a>
+            <a href="#favorites" data-page="favorites"><span class="ic">☆</span>รายงานโปรด / ล่าสุด</a>
+            <a href="#request" data-page="request"><span class="ic">✉</span>ขอรายงานใหม่</a>
+        </nav>
+        <h4>หัวข้อรายงาน</h4>
+        <nav class="nav" id="groupNav"></nav>
+        <div id="adminNav">
+            <h4>ผู้ดูแลระบบ</h4>
+            <nav class="nav">
+                <a href="#admin-reports" data-page="admin-reports"><span class="ic">☰</span>จัดการรายงาน</a>
+                <a href="#admin-groups" data-page="admin-groups"><span class="ic">▤</span>หัวข้อรายงาน</a>
+                <a href="#admin-users" data-page="admin-users"><span class="ic">⚿</span>ผู้ใช้และสิทธิ์</a>
+                <a href="#admin-requests" data-page="admin-requests"><span class="ic">✉</span>คำขอรายงาน<span class="badge">3</span></a>
+                <a href="#admin-audit" data-page="admin-audit"><span class="ic">⌚</span>ประวัติการใช้งาน</a>
+                <a href="#admin-settings" data-page="admin-settings"><span class="ic">⚙</span>ตั้งค่าระบบ</a>
+            </nav>
+        </div>
+        <h4>เอกสารออกแบบ</h4>
+        <nav class="nav"><a href="#spec" data-page="spec"><span class="ic">📄</span>ข้อกำหนดระบบ (Spec)</a></nav>
+    </aside>
+
+    <div class="main">
+        <header class="top">
+            <button class="btn ghost sm menu-btn" onclick="document.getElementById('side').classList.toggle('open')">☰</button>
+            <div class="title" id="pageTitle">Dashboard</div>
+            <input class="search" placeholder="🔍 ค้นหารายงาน เช่น CKD, refer, ไข้เลือดออก" oninput="quickSearch(this.value)">
+            <div class="spacer"></div>
+            <div class="demo-role">ทดลองดูในฐานะ
+                <select id="roleSwitch" onchange="applyRole()">
+                    <option value="admin">ผู้ดูแลระบบ</option>
+                    <option value="ncd">เจ้าหน้าที่ NCD</option>
+                    <option value="er">พยาบาล ER</option>
+                    <option value="exec">ผู้บริหาร</option>
+                </select>
+            </div>
+            <div class="user"><div class="avatar" id="avatar">A</div><div><div id="userName">admin</div><div class="muted small" id="userRole">ผู้ดูแลระบบ</div></div></div>
+            <button class="btn ghost sm" onclick="logout()">ออก</button>
+        </header>
+
+        <div class="content">
+
+        <!-- ============ DASHBOARD ============ -->
+        <section class="page" id="page-dashboard">
+            <div class="tabs" id="dashTabs">
+                <button class="on">Dashboard ของฉัน</button>
+                <button>Dashboard ผู้บริหาร <span class="chip gray">แชร์</span></button>
+                <button>Dashboard NCD <span class="chip gray">แชร์</span></button>
+                <button onclick="toast('สร้าง Dashboard ใหม่ (ตั้งชื่อ + เลือกแชร์ให้ Role ไหน)')">＋</button>
+            </div>
+            <div class="card" style="margin-bottom:16px"><div class="card-b">
+                <div class="toolbar" style="margin:0">
+                    <div class="field"><span>ช่วงเวลา (ใช้กับทุกรายงานบนหน้านี้)</span>
+                        <div style="display:flex;gap:6px;flex-wrap:wrap" class="presets">
+                            <button class="preset">วันนี้</button><button class="preset">เดือนนี้</button><button class="preset">ไตรมาสนี้</button><button class="preset on">ปีงบ 2569</button><button class="preset">ปีงบ 2568</button><button class="preset">กำหนดเอง</button>
+                        </div>
+                    </div>
+                    <div class="field"><span>วันที่เริ่ม</span><input type="date" value="2025-10-01"></div>
+                    <div class="field"><span>วันที่สิ้นสุด</span><input type="date" value="2026-09-30"></div>
+                    <div class="field"><span>เปรียบเทียบกับ</span><select><option>ปีงบก่อนหน้า</option><option>ไม่เปรียบเทียบ</option></select></div>
+                    <button class="btn" onclick="toast('ประมวลผล Dashboard ใหม่')">แสดงผล</button>
+                    <div style="flex:1"></div>
+                    <button class="btn alt" onclick="openPicker()">⚙ เลือกรายงานที่แสดง</button>
+                    <button class="btn green export-btn" onclick="toast('ส่งออก Excel: 1 รายงาน = 1 sheet + sheet สรุปเงื่อนไข')">⭳ Export Excel ทั้งหน้า</button>
+                </div>
+                <div class="muted small" style="margin-top:8px">ข้อมูล ณ 12/10/2569 08:30 (cache 30 นาที) · <a href="#" onclick="toast('ดึงข้อมูลใหม่จาก HIS');return false">รีเฟรช</a></div>
+            </div></div>
+            <div class="grid g4" id="widgets"></div>
+        </section>
+
+        <!-- ============ FAVORITES ============ -->
+        <section class="page" id="page-favorites">
+            <div class="grid g2">
+                <div class="card"><div class="card-h"><h3>☆ รายงานโปรด</h3></div><div class="card-b" id="favList"></div></div>
+                <div class="card"><div class="card-h"><h3>⌚ เปิดล่าสุด</h3></div><div class="card-b" id="recentList"></div></div>
+            </div>
+        </section>
+
+        <!-- ============ SEARCH RESULT ============ -->
+        <section class="page" id="page-search">
+            <div class="card"><div class="card-h"><h3 id="searchTitle">ผลการค้นหา</h3></div><div class="card-b" id="searchBody"></div></div>
+        </section>
+
+        <!-- ============ REPORT VIEW ============ -->
+        <section class="page" id="page-report">
+            <div class="muted small" id="rvCrumb"></div>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                <h2 style="margin:4px 0" id="rvTitle"></h2>
+                <button class="btn ghost sm" id="rvFav" onclick="this.textContent = this.textContent.indexOf('★')===0 ? '☆ เพิ่มรายงานโปรด' : '★ รายงานโปรด'">☆ เพิ่มรายงานโปรด</button>
+            </div>
+            <div class="muted small" id="rvDesc" style="margin-bottom:14px"></div>
+            <div class="card" style="margin-bottom:16px"><div class="card-b"><div class="toolbar" style="margin:0" id="rvParams"></div></div></div>
+            <div class="card">
+                <div class="card-h">
+                    <div class="tabs" id="rvTabs" style="margin:0;border:0"></div>
+                    <div class="spacer"></div>
+                    <span class="muted small" id="rvMeta"></span>
+                    <button class="btn ghost sm" onclick="toast('คัดลอกลิงก์รายงานพร้อมเงื่อนไขแล้ว: /report/8?date_start=2025-10-01&icd_from=I10...')">🔗 แชร์ลิงก์</button>
+                    <button class="btn ghost sm" onclick="window.print()">🖨 พิมพ์</button>
+                    <button class="btn green sm export-btn" onclick="toast('ส่งออก Excel: ' + document.getElementById('rvTitle').textContent + ' (บันทึกใน log)')">⭳ Export Excel</button>
+                </div>
+                <div class="card-b" id="rvBody"></div>
+            </div>
+        </section>
+
+        <!-- ============ REQUEST (user) ============ -->
+        <section class="page" id="page-request">
+            <div class="grid g3">
+                <div class="card span2">
+                    <div class="card-h"><h3>ขอรายงานใหม่ / ขอแก้ไขรายงาน</h3></div>
+                    <div class="card-b grid g2">
+                        <div class="field"><span>ประเภทคำขอ</span><select><option>รายงานใหม่</option><option>แก้ไข/ปรับนิยามรายงานเดิม</option><option>แจ้งตัวเลขผิดปกติ</option></select></div>
+                        <div class="field"><span>ความเร่งด่วน</span><select><option>ปกติ (7 วัน)</option><option>ด่วน (3 วัน)</option><option>ด่วนมาก (ภายในวันนี้) — ระบุเหตุผล</option></select></div>
+                        <div class="field span-all"><span>ชื่อรายงาน *</span><input placeholder="เช่น ผู้ป่วย CKD stage 4-5 ที่ยังไม่ได้ refer"></div>
+                        <div class="field span-all"><span>นิยาม / สูตรคำนวณ / แหล่งอ้างอิง (เช่น ตัวชี้วัด HA, HDC)</span><textarea rows="3"></textarea></div>
+                        <div class="field"><span>เงื่อนไขที่ต้องการเลือกเอง</span><input placeholder="ช่วงวันที่, คลินิก, ICD10"></div>
+                        <div class="field"><span>รูปแบบที่ต้องการ</span><select><option>รายชื่อผู้ป่วย</option><option>ตัวเลขสรุป</option><option>กราฟ</option><option>ทุกแบบ</option></select></div>
+                        <div class="field"><span>หน่วยงาน</span><select><option>คลินิกเบาหวาน</option><option>ER</option><option>IPD</option><option>ทีมคุณภาพ (HA)</option></select></div>
+                        <div class="field"><span>เบอร์ติดต่อภายใน</span><input placeholder="เช่น 1203"></div>
+                        <div class="field span-all"><span>แนบตัวอย่างแบบฟอร์ม (Excel / รูป / PDF)</span><input type="file"></div>
+                        <div class="span-all"><button class="btn" onclick="toast('ส่งคำขอแล้ว — ติดตามสถานะด้านขวา')">ส่งคำขอ</button></div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-h"><h3>คำขอของฉัน</h3></div>
+                    <div class="card-b grid" style="gap:12px">
+                        <div><b>ผู้ป่วย CKD 4-5 ยังไม่ refer</b><div class="status-flow" style="margin-top:4px"><span class="done">ส่งคำขอ</span><span class="done">รับเรื่อง</span><span class="now">กำลังพัฒนา</span><span>ตรวจสอบตัวเลข</span><span>เผยแพร่</span></div></div>
+                        <div><b>อัตราขาดนัดคลินิก HT รายเดือน</b><div class="status-flow" style="margin-top:4px"><span class="done">ส่งคำขอ</span><span class="done">รับเรื่อง</span><span class="done">กำลังพัฒนา</span><span class="done">ตรวจสอบตัวเลข</span><span class="now">เผยแพร่แล้ว</span></div><a class="small" href="#report/9">เปิดรายงาน →</a></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ ADMIN: REPORT LIST ============ -->
+        <section class="page" id="page-admin-reports">
+            <div class="toolbar">
+                <div class="field"><span>ค้นหา</span><input placeholder="ชื่อรายงาน / ตาราง / ICD10"></div>
+                <div class="field"><span>หัวข้อรายงาน</span><select id="arGroup"></select></div>
+                <div class="field"><span>สถานะ</span><select><option>ทั้งหมด</option><option>เผยแพร่</option><option>ร่าง</option><option>ปิดใช้งาน</option></select></div>
+                <div style="flex:1"></div>
+                <button class="btn alt" onclick="openImport()">⇪ นำเข้า</button>
+                <button class="btn alt" onclick="toast('ส่งออกรายงานที่เลือกเป็นไฟล์ .json (SQL + ตัวแปร + การแสดงผล) เพื่อแชร์ให้ รพ. อื่น')">⇩ ส่งออก</button>
+                <a class="btn" href="#admin-report-edit">＋ สร้างรายงานใหม่</a>
+            </div>
+            <div class="card"><div class="tbl-wrap"><table id="arTable"></table></div></div>
+        </section>
+
+        <!-- ============ ADMIN: REPORT EDIT ============ -->
+        <section class="page" id="page-admin-report-edit">
+            <div class="toolbar">
+                <div><div class="muted small">จัดการรายงาน › แก้ไข</div><h2 style="margin:2px 0">ผู้ป่วยนอกตามช่วงรหัสโรค ICD10 <span class="chip amber">ร่าง v4</span> <span class="chip green">เผยแพร่ v3</span></h2></div>
+                <div style="flex:1"></div>
+                <button class="btn alt" onclick="testQuery()">▶ ทดสอบ</button>
+                <button class="btn ghost" onclick="toast('บันทึกร่างแล้ว (ผู้ใช้ยังเห็นเวอร์ชันที่เผยแพร่)')">บันทึกร่าง</button>
+                <button class="btn" onclick="toast('เผยแพร่ v4 แล้ว — เก็บ v3 ไว้ในประวัติ');location.hash='admin-reports'">เผยแพร่</button>
+            </div>
+            <div class="tabs" id="editTabs">
+                <button class="on" data-t="general">1. ข้อมูลทั่วไป</button>
+                <button data-t="sql">2. SQL และตัวแปร</button>
+                <button data-t="cols">3. คอลัมน์</button>
+                <button data-t="display">4. การแสดงผล</button>
+                <button data-t="kpi">5. เป้าหมาย / KPI</button>
+                <button data-t="perf">6. ประสิทธิภาพ</button>
+                <button data-t="history">7. ประวัติเวอร์ชัน</button>
+            </div>
+
+            <div class="et" id="et-general"><div class="card"><div class="card-b grid g2">
+                <div class="field span-all"><span>ชื่อรายงาน *</span><input value="ผู้ป่วยนอกตามช่วงรหัสโรค ICD10"></div>
+                <div class="field"><span>รหัสรายงาน</span><input value="OPD-ICD-RANGE"></div>
+                <div class="field"><span>หัวข้อรายงาน *</span><select id="reGroup"></select></div>
+                <div class="field"><span>ประเภท</span><select><option>รายงานกลาง (System)</option><option>รายงานเฉพาะหน่วยงาน (Custom)</option></select></div>
+                <div class="field"><span>เจ้าของรายงาน / ผู้ตรวจตัวเลข</span><input value="งานเวชระเบียน"></div>
+                <div class="field span-all"><span>นิยาม / สูตรคำนวณ (แสดงใต้ชื่อรายงานให้ผู้ใช้อ่าน)</span><textarea rows="3">นับ visit ผู้ป่วยนอก (an='0', sickdate ไม่ว่าง) ที่มี Dx ทุกตำแหน่งอยู่ในช่วงรหัสที่เลือก แยกตามรหัสโรค · ครั้ง = จำนวน visit, คน = HN ไม่ซ้ำ</textarea></div>
+                <div class="field"><span>แหล่งอ้างอิง</span><input value="ตัวชี้วัด HA / คิวรี่เดิม rep_query_item #115"></div>
+                <div class="field"><span>คำค้น (tag)</span><input value="OPD, ICD10, อันดับโรค"></div>
+                <label class="small span-all"><input type="checkbox" checked> มีรายชื่อผู้ป่วย (ข้อมูลส่วนบุคคล) — ผู้ไม่มีสิทธิ์จะเห็นแบบปิดบัง และทุกการเปิด/ส่งออกจะถูกบันทึก</label>
+            </div></div></div>
+
+            <div class="et hide" id="et-sql">
+                <div class="grid g3">
+                    <div class="card span2">
+                        <div class="card-h"><h3>คำสั่ง SQL</h3><div class="spacer"></div><span class="chip amber">SELECT เท่านั้น</span><span class="chip gray">ฐาน: hi (อ่านอย่างเดียว)</span></div>
+                        <div class="card-b">
+<textarea class="sql" spellcheck="false">SELECT
+    d.icd10              AS icd10,
+    i.icd10name          AS icd10name,
+    COUNT(o.vn)          AS visit,
+    COUNT(DISTINCT o.hn) AS person
+FROM ovst o
+INNER JOIN ovstdx d ON d.vn = o.vn
+INNER JOIN icd101 i ON i.icd10 = d.icd10
+WHERE o.vstdttm >= {date.start}
+  AND o.vstdttm <  {date.end}
+  AND o.an = '0'
+  AND o.sickdate != '0000-00-00'
+  AND d.icd10 BETWEEN {icd_from} AND {icd_to}
+  [[ AND o.cln IN ({clinic}) ]]
+  [[ AND o.pttype IN ({pttype}) ]]
+GROUP BY d.icd10
+ORDER BY visit DESC</textarea>
+                            <div class="muted small" style="margin-top:8px;line-height:1.7">
+                                <code>{ชื่อตัวแปร}</code> = แทนค่าแบบ prepared statement (กัน SQL injection) ·
+                                <code>{date.start}</code>/<code>{date.end}</code> = ตัวแปรช่วงวันที่ (end แปลงเป็นวันถัดไปให้อัตโนมัติ) ·
+                                <code>[[ ... ]]</code> = เงื่อนไขเสริม ถ้าผู้ใช้ไม่เลือกค่า ระบบตัดทั้งบรรทัดทิ้ง ·
+                                ตัวแปรหลายค่าใช้กับ <code>IN ( )</code>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-h"><h3>ผลทดสอบ</h3></div>
+                        <div class="card-b small" id="testResult"><span class="muted">กด ▶ ทดสอบ ด้านบน — ระบบจะรันด้วยค่าเริ่มต้นของตัวแปร จำกัด 100 แถว และแสดงคอลัมน์ที่ได้</span></div>
+                    </div>
+                </div>
+                <div class="card" style="margin-top:16px">
+                    <div class="card-h"><h3>ตัวแปรเงื่อนไข (ผู้ใช้กรอกก่อนรัน)</h3><div class="spacer"></div><button class="btn alt sm" onclick="toast('ตรวจพบตัวแปรใน SQL: date, icd_from, icd_to, clinic, pttype')">⟳ ดึงตัวแปรจาก SQL</button><button class="btn alt sm" onclick="addParam()">＋ เพิ่มตัวแปร</button></div>
+                    <div class="tbl-wrap"><table class="ptbl" id="paramTbl"></table></div>
+                    <div class="card-b small muted">ชนิด "ตัวเลือกจาก SQL" ใช้คิวรี่คืน 2 คอลัมน์ <code>value, label</code> เช่น <code>SELECT cln, namecln FROM cln</code> · ค่าเริ่มต้นของวันที่ใช้คำได้ เช่น <code>ต้นปีงบ</code>, <code>วันนี้</code>, <code>-30 วัน</code></div>
+                </div>
+            </div>
+
+            <div class="et hide" id="et-cols"><div class="card">
+                <div class="card-h"><h3>การจัดรูปแบบคอลัมน์</h3><div class="spacer"></div><span class="muted small">ได้จากผลทดสอบล่าสุด</span></div>
+                <div class="tbl-wrap"><table class="ptbl">
+                    <tr><th>คอลัมน์ SQL</th><th>หัวตาราง</th><th>รูปแบบ</th><th class="c">ซ่อน</th><th class="c">รวมท้ายตาราง</th><th>คลิกแล้วไปที่ (drill-down)</th><th>ข้อมูลส่วนบุคคล</th></tr>
+                    <tr><td><code>icd10</code></td><td><input value="รหัสโรค"></td><td><select><option>ข้อความ</option></select></td><td class="c"><input type="checkbox" style="width:auto"></td><td class="c">-</td><td><select><option>รายชื่อผู้ป่วยตามรหัสโรค (#14) ส่ง icd10, date</option><option>— ไม่มี —</option></select></td><td><select><option>ไม่ใช่</option></select></td></tr>
+                    <tr><td><code>icd10name</code></td><td><input value="ชื่อโรค"></td><td><select><option>ข้อความ</option></select></td><td class="c"><input type="checkbox" style="width:auto"></td><td class="c">-</td><td><select><option>— ไม่มี —</option></select></td><td><select><option>ไม่ใช่</option></select></td></tr>
+                    <tr><td><code>visit</code></td><td><input value="ครั้ง"></td><td><select><option>ตัวเลข 1,234</option><option>ทศนิยม 2 ตำแหน่ง</option><option>ร้อยละ</option><option>แท่งในเซลล์</option></select></td><td class="c"><input type="checkbox" style="width:auto"></td><td class="c"><select style="width:auto"><option>ผลรวม</option><option>เฉลี่ย</option><option>ไม่รวม</option></select></td><td><select><option>— ไม่มี —</option></select></td><td><select><option>ไม่ใช่</option></select></td></tr>
+                    <tr><td><code>person</code></td><td><input value="คน"></td><td><select><option>ตัวเลข 1,234</option></select></td><td class="c"><input type="checkbox" style="width:auto"></td><td class="c"><select style="width:auto"><option>ไม่รวม</option><option>ผลรวม</option></select></td><td><select><option>— ไม่มี —</option></select></td><td><select><option>ไม่ใช่</option></select></td></tr>
+                </table></div>
+                <div class="card-b small muted">รูปแบบที่รองรับ: ข้อความ, ตัวเลข, ทศนิยม, ร้อยละ, วันที่ไทย (12/10/2569), วันเวลา, แท่งในเซลล์, ลิงก์ · ข้อมูลส่วนบุคคล: ชื่อ-สกุล / เลขบัตร / เบอร์โทร / ที่อยู่ → ปิดบังอัตโนมัติถ้าไม่มีสิทธิ์ · "รวม" ของคน (HN ไม่ซ้ำ) ใช้ผลรวมไม่ได้ ต้องคำนวณจาก SQL แยก</div>
+            </div></div>
+
+            <div class="et hide" id="et-display"><div class="grid g3">
+                <div class="disp-opt on"><label class="head"><input type="checkbox" checked onchange="this.closest('.disp-opt').classList.toggle('on',this.checked)"> # ตัวเลข (KPI)</label>
+                    <div class="cfg">
+                        <div class="field"><span>ค่าหลัก</span><select><option>SUM(visit)</option><option>SUM(person)</option><option>COUNT(แถว)</option><option>ค่าแถวแรก</option></select></div>
+                        <div class="field"><span>ค่ารอง</span><select><option>SUM(person)</option><option>— ไม่มี —</option></select></div>
+                        <label class="small"><input type="checkbox" checked> แสดงเทียบช่วงเวลาก่อนหน้า (↑↓ %)</label>
+                    </div></div>
+                <div class="disp-opt on"><label class="head"><input type="checkbox" checked onchange="this.closest('.disp-opt').classList.toggle('on',this.checked)"> ▥ กราฟ</label>
+                    <div class="cfg">
+                        <div class="field"><span>ชนิด</span><select><option>แท่งแนวนอน (อันดับ)</option><option>แท่งแนวตั้ง</option><option>เส้น (แนวโน้มรายเดือน)</option><option>แท่งซ้อน</option><option>วงกลม</option></select></div>
+                        <div class="field"><span>แกน / หมวด</span><select><option>icd10name</option><option>icd10</option></select></div>
+                        <div class="field"><span>ค่า (เลือกได้หลายชุด)</span><select><option>visit, person</option><option>visit</option></select></div>
+                        <div class="field"><span>แสดงสูงสุด</span><input value="10"></div>
+                    </div></div>
+                <div class="disp-opt on"><label class="head"><input type="checkbox" checked onchange="this.closest('.disp-opt').classList.toggle('on',this.checked)"> ☰ ตาราง / รายชื่อ</label>
+                    <div class="cfg">
+                        <div class="field"><span>แถวต่อหน้า</span><input value="50"></div>
+                        <label class="small"><input type="checkbox" checked> ค้นหา/เรียงลำดับในตารางได้</label>
+                        <label class="small"><input type="checkbox" checked> แถวรวมท้ายตาราง</label>
+                    </div></div>
+                <div class="disp-opt on"><label class="head"><input type="checkbox" checked onchange="this.closest('.disp-opt').classList.toggle('on',this.checked)"> ▦ ตารางเทียบปีงบ (แบบ index.php)</label>
+                    <div class="cfg">
+                        <div class="muted small">รันคิวรี่ซ้ำตามปีงบ แล้วแสดงเป็นคอลัมน์ เช่น 2567 | 2568 | 2569 | 2570 (2ด.)</div>
+                        <div class="field"><span>จำนวนปี</span><input value="3"></div>
+                    </div></div>
+                <div class="disp-opt"><label class="head"><input type="checkbox" onchange="this.closest('.disp-opt').classList.toggle('on',this.checked)"> ⊞ แยกรายเดือน / ไตรมาส</label>
+                    <div class="cfg"><div class="muted small">แบ่งช่วงวันที่เป็นรายเดือน (ต.ค.–ก.ย.) หรือไตรมาส แล้วรันทีละช่วง</div></div></div>
+                <div class="disp-opt on"><label class="head">การใช้งาน</label>
+                    <div class="cfg">
+                        <div class="field"><span>มุมมองเริ่มต้น</span><select><option>กราฟ</option><option>ตัวเลข</option><option>ตาราง</option></select></div>
+                        <label class="small"><input type="checkbox" checked> เลือกใส่ Dashboard ได้</label>
+                        <label class="small"><input type="checkbox" checked> Export Excel ได้ (ตามสิทธิ์ Role)</label>
+                    </div></div>
+            </div></div>
+
+            <div class="et hide" id="et-kpi"><div class="card"><div class="card-b grid g2">
+                <div class="note span-all" style="margin:0">สำหรับรายงานที่เป็นตัวชี้วัด (แบบ HDC: เป้าหมาย → ผลงาน → ร้อยละ) — ระบบแสดงสี ผ่าน/ไม่ผ่าน บนการ์ด Dashboard</div>
+                <label class="small span-all"><input type="checkbox" checked> รายงานนี้เป็นตัวชี้วัด</label>
+                <div class="field"><span>ตัวตั้ง (ผลงาน) — คอลัมน์</span><select><option>result</option></select></div>
+                <div class="field"><span>ตัวหาร (เป้าหมาย/กลุ่มเป้าหมาย) — คอลัมน์</span><select><option>target</option></select></div>
+                <div class="field"><span>เกณฑ์</span><div style="display:flex;gap:6px"><select style="width:80px"><option>≥</option><option>≤</option></select><input value="80" style="width:80px"><span style="align-self:center">%</span></div></div>
+                <div class="field"><span>ช่วงเตือน (สีเหลือง)</span><div style="display:flex;gap:6px"><input value="70" style="width:80px"><span style="align-self:center">– 79.99 %</span></div></div>
+                <div class="field"><span>แยกดูรายพื้นที่ / หน่วย (drill-down)</span><select><option>หมู่บ้าน/ตำบล ในเขตรับผิดชอบ</option><option>คลินิก</option><option>ตึก</option><option>ไม่แยก</option></select></div>
+                <div class="field"><span>ความถี่ประเมิน</span><select><option>รายไตรมาส</option><option>รายเดือน</option><option>รายปีงบ</option></select></div>
+            </div></div></div>
+
+            <div class="et hide" id="et-perf"><div class="card"><div class="card-b grid g2">
+                <div class="field"><span>เก็บผลไว้ (cache)</span><select><option>30 นาที</option><option>ไม่เก็บ (สดทุกครั้ง)</option><option>1 วัน</option><option>ช่วงที่ปิดปีงบแล้ว = ถาวร</option></select></div>
+                <div class="field"><span>เวลารันสูงสุด</span><select><option>60 วินาที</option><option>30 วินาที</option><option>120 วินาที</option></select></div>
+                <div class="field"><span>จำนวนแถวสูงสุด</span><input value="50000"></div>
+                <div class="field"><span>ประมวลผลล่วงหน้า (ตั้งเวลา)</span><select><option>ไม่ตั้ง</option><option>ทุกวัน 02:00 (รายงานหนัก)</option></select></div>
+                <div class="note warn span-all" style="margin:0">คิวรี่ที่ใช้ <code>date(o.vstdttm) BETWEEN</code> จะไม่ใช้ index — แนะนำ <code>o.vstdttm &gt;= {date.start} AND o.vstdttm &lt; {date.end}</code> (ระบบตรวจด้วย EXPLAIN ตอนทดสอบ)</div>
+            </div></div></div>
+
+            <div class="et hide" id="et-history"><div class="card"><div class="card-b">
+                <div class="timeline">
+                    <div><b>v4 (ร่าง)</b> · admin · 12/10/2569 09:10<br><span class="muted">เพิ่ม sickdate != '0000-00-00' ตามคิวรี่ health.php</span> <button class="btn ghost sm" onclick="toast('เทียบ SQL v3 ↔ v4')">เทียบกับ v3</button></div>
+                    <div><b>v3 (เผยแพร่)</b> · admin · 01/10/2569 14:22<br><span class="muted">เพิ่มเงื่อนไขเสริม คลินิก / สิทธิ</span> <button class="btn ghost sm" onclick="toast('ย้อนกลับเป็น v3')">ย้อนกลับ</button></div>
+                    <div><b>v2</b> · ncd01 · 15/09/2569 10:05<br><span class="muted">เปลี่ยนเป็น INNER JOIN icd101</span></div>
+                    <div><b>v1</b> · admin · 02/09/2569 08:40<br><span class="muted">สร้างจาก rep_query_item #115</span></div>
+                </div>
+            </div></div></div>
+        </section>
+
+        <!-- ============ ADMIN: GROUPS ============ -->
+        <section class="page" id="page-admin-groups">
+            <div class="toolbar"><div class="muted small">หัวข้อรายงาน 2 ระดับ: หมวดหลัก → หัวข้อ (เหมือน Report Central ของ HOSxP)</div><div style="flex:1"></div><button class="btn" onclick="toast('เพิ่มหัวข้อรายงาน (ตัวอย่าง)')">＋ เพิ่มหัวข้อรายงาน</button></div>
+            <div class="card"><div class="tbl-wrap"><table id="grpTable"></table></div></div>
+        </section>
+
+        <!-- ============ ADMIN: USERS ============ -->
+        <section class="page" id="page-admin-users">
+            <div class="tabs" id="userTabs">
+                <button class="on" data-t="roles">กลุ่มสิทธิ์ (Role)</button>
+                <button data-t="users">ผู้ใช้</button>
+            </div>
+            <div id="ut-roles">
+                <div class="note">กำหนดว่าแต่ละ Role เข้าถึง <b>หัวข้อรายงาน</b> ไหนได้ และสิทธิ์พิเศษ. ผู้ใช้ 1 คนมีได้หลาย Role (สิทธิ์รวมกัน). ลองเปลี่ยน "ทดลองดูในฐานะ" มุมขวาบน</div>
+                <div class="card"><div class="tbl-wrap"><table class="matrix" id="matrix"></table></div>
+                <div class="modal-f"><button class="btn" onclick="toast('บันทึกสิทธิ์แล้ว (บันทึกใน log ด้วย)')">บันทึกสิทธิ์</button></div></div>
+                <div class="card" style="margin-top:16px"><div class="card-b small">
+                    <b>สิทธิ์พิเศษ</b>
+                    <ul style="margin:6px 0 0;padding-left:20px;line-height:1.8">
+                        <li><b>Export</b> — ส่งออก Excel/พิมพ์</li>
+                        <li><b>ดูข้อมูลบุคคล</b> — เห็นชื่อ-สกุล, เลขบัตร, เบอร์โทร, ที่อยู่ เต็ม (ไม่มีสิทธิ์ = ปิดบัง)</li>
+                        <li><b>สร้างรายงาน</b> — สร้าง/แก้ไขรายงานในหัวข้อที่ตัวเองมีสิทธิ์ (ต้องให้แอดมินอนุมัติก่อนเผยแพร่)</li>
+                        <li><b>ผู้ดูแลระบบ</b> — ทุกอย่าง รวมผู้ใช้และสิทธิ์</li>
+                    </ul>
+                </div></div>
+            </div>
+            <div id="ut-users" class="hide">
+                <div class="toolbar">
+                    <div class="field"><span>ค้นหาผู้ใช้จาก HIS</span><input placeholder="ชื่อผู้ใช้ / ชื่อ-สกุล"></div>
+                    <div style="flex:1"></div>
+                    <button class="btn" onclick="toast('เลือกผู้ใช้จากตารางผู้ใช้ของ HIS แล้วกำหนด Role')">＋ เพิ่มผู้ใช้จาก HIS</button>
+                </div>
+                <div class="card"><div class="tbl-wrap"><table id="userTable"></table></div></div>
+            </div>
+        </section>
+
+        <!-- ============ ADMIN: REQUESTS ============ -->
+        <section class="page" id="page-admin-requests">
+            <div class="card"><div class="tbl-wrap"><table>
+                <tr><th>วันที่</th><th>คำขอ</th><th>ผู้ขอ / หน่วยงาน</th><th>ความเร่งด่วน</th><th>สถานะ</th><th>ผู้รับผิดชอบ</th><th></th></tr>
+                <tr><td>11/10/2569</td><td><b>ผู้ป่วย CKD 4-5 ยังไม่ refer</b><div class="muted small">รายงานใหม่ · แนบ Excel ตัวอย่าง</div></td><td>ncd01 · คลินิกเบาหวาน</td><td><span class="chip amber">ด่วน</span></td><td><select><option>กำลังพัฒนา</option><option>รับเรื่อง</option><option>ตรวจสอบตัวเลข</option><option>เผยแพร่แล้ว</option><option>ปฏิเสธ</option></select></td><td>admin</td><td><a class="btn ghost sm" href="#admin-report-edit">สร้างรายงาน</a></td></tr>
+                <tr><td>10/10/2569</td><td><b>ตัวเลข ER ไม่ตรงกับทะเบียน</b><div class="muted small">แจ้งตัวเลขผิดปกติ · รายงาน #4</div></td><td>er02 · ER</td><td><span class="chip red">ด่วนมาก</span></td><td><select><option>รับเรื่อง</option></select></td><td>admin</td><td><a class="btn ghost sm" href="#report/4">เปิดรายงาน</a></td></tr>
+                <tr><td>08/10/2569</td><td><b>LOS แยกตามตึก</b><div class="muted small">แก้ไขรายงานเดิม #5</div></td><td>dir · บริหาร</td><td><span class="chip gray">ปกติ</span></td><td><select><option>รับเรื่อง</option></select></td><td>—</td><td></td></tr>
+            </table></div></div>
+        </section>
+
+        <!-- ============ ADMIN: AUDIT ============ -->
+        <section class="page" id="page-admin-audit">
+            <div class="toolbar">
+                <div class="field"><span>ผู้ใช้</span><select><option>ทั้งหมด</option><option>ncd01</option><option>er02</option></select></div>
+                <div class="field"><span>การกระทำ</span><select><option>ทั้งหมด</option><option>เปิดรายงาน</option><option>Export</option><option>เปิดรายชื่อผู้ป่วย</option><option>แก้ไขรายงาน/สิทธิ์</option><option>เข้าสู่ระบบ</option></select></div>
+                <div class="field"><span>วันที่</span><input type="date" value="2026-10-12"></div>
+                <div style="flex:1"></div>
+                <button class="btn green" onclick="toast('ส่งออก log เป็น Excel')">⭳ Export log</button>
+            </div>
+            <div class="grid g4" style="margin-bottom:16px">
+                <div class="card kpi"><div class="lbl">เปิดรายงานวันนี้</div><div class="val">128</div></div>
+                <div class="card kpi"><div class="lbl">Export วันนี้</div><div class="val">17</div></div>
+                <div class="card kpi"><div class="lbl">เปิดรายชื่อผู้ป่วย</div><div class="val">42</div></div>
+                <div class="card kpi"><div class="lbl">รายงานที่ช้าที่สุด</div><div class="val" style="font-size:20px">#7 · 12.4 วิ</div></div>
+            </div>
+            <div class="card"><div class="tbl-wrap"><table>
+                <tr><th>เวลา</th><th>ผู้ใช้</th><th>การกระทำ</th><th>รายงาน</th><th>เงื่อนไข</th><th class="num">แถว</th><th class="num">เวลา (วิ)</th><th>IP</th></tr>
+                <tr><td>12/10/2569 09:14</td><td>ncd01</td><td><span class="chip red">Export รายชื่อผู้ป่วย</span></td><td>รายชื่อขาดนัด คลินิกเบาหวาน</td><td class="small">2026-09-01 – 2026-09-30</td><td class="num">214</td><td class="num">1.2</td><td>10.0.2.31</td></tr>
+                <tr><td>12/10/2569 09:02</td><td>dir</td><td><span class="chip">เปิดรายงาน</span></td><td>สถิติการให้บริการ 9.1</td><td class="small">ปีงบ 2567–2570</td><td class="num">20</td><td class="num">0.1 (cache)</td><td>10.0.1.10</td></tr>
+                <tr><td>12/10/2569 08:55</td><td>admin</td><td><span class="chip amber">แก้ไขรายงาน</span></td><td>ผู้ป่วยนอกตามช่วง ICD10</td><td class="small">v3 → v4 (ร่าง)</td><td class="num">-</td><td class="num">-</td><td>10.0.0.5</td></tr>
+                <tr><td>12/10/2569 08:41</td><td>er02</td><td><span class="chip gray">ถูกปฏิเสธสิทธิ์</span></td><td>ผู้ป่วยคลินิกพิเศษ</td><td class="small">-</td><td class="num">-</td><td class="num">-</td><td>10.0.3.7</td></tr>
+            </table></div></div>
+        </section>
+
+        <!-- ============ ADMIN: SETTINGS ============ -->
+        <section class="page" id="page-admin-settings">
+            <div class="grid g2">
+                <div class="card"><div class="card-h"><h3>การเชื่อมต่อ HIS</h3><div class="spacer"></div><span class="chip green">เชื่อมต่อได้</span></div><div class="card-b grid g2">
+                    <div class="field"><span>Host</span><input value="10.0.0.8"></div><div class="field"><span>Port</span><input value="3306"></div>
+                    <div class="field"><span>ฐานข้อมูล</span><input value="hi"></div><div class="field"><span>ผู้ใช้ (สิทธิ์ SELECT เท่านั้น)</span><input value="hiuser"></div>
+                    <div class="field span-all"><span>ฐานสำรองสำหรับรายงานหนัก (Replica) — ถ้ามี</span><input placeholder="เช่น 10.0.0.9"></div>
+                    <div class="span-all"><button class="btn alt sm" onclick="toast('ทดสอบเชื่อมต่อสำเร็จ (MariaDB 10.3.39)')">ทดสอบการเชื่อมต่อ</button></div>
+                </div></div>
+                <div class="card"><div class="card-h"><h3>ค่าระบบ</h3></div><div class="card-b grid g2">
+                    <div class="field"><span>ชื่อหน่วยงาน (หัวรายงาน)</span><input value="โรงพยาบาลศรีเมืองใหม่"></div>
+                    <div class="field"><span>รหัสสถานพยาบาล</span><input value="10944"></div>
+                    <div class="field"><span>เริ่มปีงบประมาณ</span><select><option>1 ตุลาคม</option></select></div>
+                    <div class="field"><span>รูปแบบวันที่</span><select><option>วว/ดด/ปปปป (พ.ศ.)</option></select></div>
+                    <div class="field"><span>หมดเวลาเข้าสู่ระบบ</span><select><option>30 นาที</option><option>8 ชั่วโมง</option></select></div>
+                    <div class="field"><span>เก็บ log</span><select><option>2 ปี</option><option>5 ปี</option></select></div>
+                </div></div>
+                <div class="card span-all"><div class="card-h"><h3>ข้อมูลกรอกเอง (ไม่มีใน HIS)</h3></div><div class="card-b">
+                    <div class="tbl-wrap"><table><tr><th>รายการ</th><th class="num">2567</th><th class="num">2568</th><th class="num">2569</th><th class="num">2570</th></tr>
+                    <tr><td>จำนวน case SEMI-ICU</td><td class="num">-</td><td class="num"><input value="177" style="width:70px;text-align:right"></td><td class="num"><input style="width:70px"></td><td class="num"><input style="width:70px"></td></tr>
+                    <tr><td>จำนวนเตียงที่ใช้คิดอัตราครองเตียง</td><td class="num"><input value="74" style="width:70px;text-align:right"></td><td class="num"><input value="74" style="width:70px;text-align:right"></td><td class="num"><input value="74" style="width:70px;text-align:right"></td><td class="num"><input value="74" style="width:70px;text-align:right"></td></tr>
+                    </table></div>
+                    <div class="muted small" style="margin-top:6px">ใช้ในรายงานได้ผ่านตัวแปร <code>{manual.semi_icu}</code></div>
+                </div></div>
+            </div>
+        </section>
+
+        <!-- ============ SPEC ============ -->
+        <section class="page spec" id="page-spec">
+            <div class="card"><div class="card-b">
+                <h2 style="margin-top:0">ข้อกำหนดระบบ HIS Report (ร่างก่อนพัฒนา)</h2>
+                <div class="muted small">รวมแนวทางจาก HOSxP Report Central/Report Designer, เครื่องมือรายงาน SQL (PHP Reports, Redash, Metabase), รูปแบบตัวชี้วัด HDC และระบบ his_reporter เดิมในเครื่อง</div>
+
+                <h3>1. ที่มาของแนวคิด</h3>
+                <div class="tbl-wrap"><table>
+                    <tr><th>แหล่ง</th><th>สิ่งที่นำมาใช้</th></tr>
+                    <tr><td>HOSxP Report Central / Report Designer</td><td>รายงานแบ่งหมวดหมู่, แยก System Report กับ Custom Report, รายงานเก็บในฐานข้อมูล, นำเข้า/ส่งออกรายงานเป็นไฟล์แชร์ระหว่าง รพ., รายงานตรวจคุณภาพข้อมูล</td></tr>
+                    <tr><td>PHP Reports / Redash / Metabase</td><td>ตัวแปรใน SQL หลายชนิด (วันที่, ช่วงวันที่, dropdown, dropdown จาก SQL, หลายค่า), เงื่อนไขเสริม <code>[[ ]]</code>, ตัวกรองระดับ Dashboard ใช้ร่วมทุก widget, จัดรูปแบบคอลัมน์, drill-down ไปรายงานอื่น, แถวรวม, cache ต่อรายงาน, ลิงก์แชร์พร้อมเงื่อนไข</td></tr>
+                    <tr><td>HDC กระทรวงสาธารณสุข</td><td>รูปแบบตัวชี้วัด เป้าหมาย → ผลงาน → ร้อยละ, เกณฑ์ผ่าน/ไม่ผ่าน, drill-down รายพื้นที่, แยกไตรมาส/ปีงบ</td></tr>
+                    <tr><td>his_reporter (ระบบเดิมในเครื่อง)</td><td>คำขอรายงาน + ติดตามสถานะ + ความเร่งด่วน, log การเปิด/ดาวน์โหลด, หมวด/หัวข้อ 2 ระดับ</td></tr>
+                    <tr><td>hisreport 9.1–9.6 (ที่ทำแล้ว)</td><td>ตารางเทียบปีงบหลายคอลัมน์, cache ปีที่ปิดแล้ว, ข้อมูลกรอกเอง (SEMI-ICU), connection แบบ READ ONLY</td></tr>
+                </table></div>
+
+                <h3>2. ชนิดตัวแปรเงื่อนไข</h3>
+                <div class="tbl-wrap"><table>
+                    <tr><th>ชนิด</th><th>ใน SQL</th><th>ตัวอย่างใช้งาน</th></tr>
+                    <tr><td>ช่วงวันที่ (มีปุ่มลัด เดือนนี้/ไตรมาส/ปีงบ)</td><td><code>{date.start}</code> <code>{date.end}</code></td><td>ทุกรายงาน</td></tr>
+                    <tr><td>วันที่เดียว</td><td><code>{d}</code></td><td>ยอดผู้ป่วยในคงพยาบาล ณ วันที่</td></tr>
+                    <tr><td>ปีงบประมาณ</td><td><code>{fy.start}</code> <code>{fy.end}</code></td><td>ตาราง 9.x, ตัวชี้วัด</td></tr>
+                    <tr><td>ช่วงรหัส ICD10</td><td><code>{icd_from}</code> <code>{icd_to}</code></td><td>ผู้ป่วยตามกลุ่มโรค</td></tr>
+                    <tr><td>ข้อความ / ตัวเลข</td><td><code>{hn}</code> <code>{age_min}</code></td><td>อายุ ≥ 60, HN</td></tr>
+                    <tr><td>ตัวเลือก (กำหนดเอง)</td><td><code>{sex}</code></td><td>ชาย/หญิง</td></tr>
+                    <tr><td>ตัวเลือกจาก SQL (เลือกหลายค่าได้)</td><td><code>IN ({clinic})</code></td><td>คลินิก (cln), ตึก (idpm), สิทธิ (pttype), แพทย์ (dct)</td></tr>
+                    <tr><td>เงื่อนไขเสริม</td><td><code>[[ AND o.cln IN ({clinic}) ]]</code></td><td>ไม่เลือก = ไม่กรอง</td></tr>
+                </table></div>
+
+                <h3>3. ความปลอดภัยและ PDPA</h3>
+                <ul>
+                    <li>เชื่อม HIS ด้วยผู้ใช้ที่มีสิทธิ์ SELECT เท่านั้น + <code>SET SESSION TRANSACTION READ ONLY</code>; ตรวจ SQL ต้องขึ้นต้นด้วย SELECT/WITH และห้ามมีหลายคำสั่ง</li>
+                    <li>ค่าตัวแปรส่งแบบ prepared statement เสมอ (ไม่ต่อ string)</li>
+                    <li>จำกัดเวลารัน (<code>max_statement_time</code>) และจำนวนแถว ต่อรายงาน</li>
+                    <li>คอลัมน์ที่ติดป้าย "ข้อมูลส่วนบุคคล" ปิดบังอัตโนมัติสำหรับ Role ที่ไม่มีสิทธิ์ (ทั้งบนจอและใน Excel)</li>
+                    <li>บันทึก log: เข้าสู่ระบบ, เปิดรายงาน (เงื่อนไข, จำนวนแถว, เวลา), Export, แก้ไขรายงาน/สิทธิ์, ถูกปฏิเสธสิทธิ์</li>
+                    <li>ไฟล์ Excel มีหัวกระดาษ: ชื่อรายงาน, เงื่อนไข, ผู้ส่งออก, วันเวลา</li>
+                </ul>
+
+                <h3>4. โครงสร้างฐานข้อมูลของระบบ (แยกจาก HIS)</h3>
+<div class="er">app_user        (id, his_username, display_name, department, is_active, last_login)
+role            (id, name, can_export, can_view_person, can_author, is_admin)
+user_role       (user_id, role_id)
+report_category (id, name, icon, sort)                     -- หมวดหลัก
+report_group    (id, category_id, name, description, sort) -- หัวข้อรายงาน
+role_group      (role_id, group_id)                        -- Role เห็นหัวข้อไหน
+report          (id, group_id, code, name, description, reference, tags,
+                 type[system|custom], status[draft|published|disabled],
+                 has_person_data, default_view, cache_ttl, timeout_sec, row_limit,
+                 owner, published_version)
+report_version  (id, report_id, version, sql_text, params_json, columns_json,
+                 display_json, kpi_json, note, created_by, created_at)
+user_dashboard  (id, user_id, name, filters_json, shared_role_ids)
+dashboard_widget(id, dashboard_id, report_id, view, width, sort, params_json)
+user_favorite   (user_id, report_id)
+report_request  (id, user_id, type, title, detail, urgency, status, assigned_to,
+                 report_id, attachment, created_at, updated_at)
+manual_value    (key, fiscal_year, value)                  -- SEMI-ICU, จำนวนเตียง
+report_cache    (report_id, version, params_hash, payload, created_at, expires_at)
+audit_log       (id, user_id, action, report_id, params_json, row_count,
+                 duration_ms, ip, created_at)</div>
+
+                <h3>5. ลำดับการพัฒนาที่แนะนำ</h3>
+                <ol style="padding-left:20px;line-height:1.8">
+                    <li>ฐานข้อมูลระบบ + login ด้วยผู้ใช้ HIS + Role/สิทธิ์ + log</li>
+                    <li>ตัวรันรายงาน: แทนตัวแปร, เงื่อนไขเสริม, ตาราง/ตัวเลข/กราฟ, Export Excel</li>
+                    <li>หน้าจัดการรายงาน + ทดสอบ + เวอร์ชัน + นำเข้าจาก rep_query_item</li>
+                    <li>Dashboard (เลือก widget, ตัวกรองร่วม, แชร์) + ย้ายรายงาน 9.1–9.6 เข้าระบบ</li>
+                    <li>คำขอรายงาน, KPI/เป้าหมาย, ตั้งเวลาประมวลผลล่วงหน้า</li>
+                </ol>
+
+                <h3>6. สิ่งที่ต้องยืนยันก่อนเริ่ม</h3>
+                <ul>
+                    <li>ฐานข้อมูลของระบบ (ข้อ 4) จะสร้างที่ไหน — schema ใหม่บน 10.0.0.8 หรือเครื่องนี้</li>
+                    <li>ตารางผู้ใช้และวิธีเข้ารหัสรหัสผ่านของ HIS (เพื่อ login ด้วยบัญชี HIS)</li>
+                    <li>นำเข้าคิวรี่เดิม 221 รายการจาก rep_query_item หรือไม่ / item_id กับ level_id หมายถึงอะไร</li>
+                    <li>มีฐาน Replica สำหรับรายงานหนักหรือไม่</li>
+                </ul>
+            </div></div>
+        </section>
+
+        </div>
+    </div>
+</div>
+
+<!-- widget picker -->
+<div class="modal-bg" id="picker">
+    <div class="modal">
+        <div class="card-h"><h3>เลือกรายงานที่แสดงบน Dashboard</h3><div class="spacer"></div><button class="btn ghost sm" onclick="closePicker()">✕</button></div>
+        <div class="card-b" id="pickerBody"></div>
+        <div class="modal-f"><button class="btn ghost" onclick="closePicker()">ยกเลิก</button><button class="btn" onclick="savePicker()">บันทึก</button></div>
+    </div>
+</div>
+
+<!-- import -->
+<div class="modal-bg" id="importModal">
+    <div class="modal">
+        <div class="card-h"><h3>นำเข้ารายงาน</h3><div class="spacer"></div><button class="btn ghost sm" onclick="$('importModal').classList.remove('show')">✕</button></div>
+        <div class="card-b">
+            <div class="tabs"><button class="on">จาก rep_query_item (คิวรี่เดิม)</button><button onclick="toast('เลือกไฟล์ .json ที่ส่งออกจากระบบนี้ (รพ. อื่น)')">จากไฟล์</button></div>
+            <div class="note small">แปลง <code>?</code> ตัวที่ 1 และ 2 เป็น <code>{date.start}</code>/<code>{date.end}</code> อัตโนมัติ · นำเข้าเป็น "ร่าง" ต้องทดสอบก่อนเผยแพร่</div>
+            <div class="tbl-wrap"><table>
+                <tr><th></th><th>#</th><th>ชื่อ</th><th>ตัวแปรเดิม</th><th>นำเข้าไปที่หัวข้อ</th></tr>
+                <tr><td><input type="checkbox" checked></td><td>115</td><td>10 อันดับโรค ผู้ป่วยนอก</td><td>datestart,dateend</td><td><select><option>ผู้ป่วยนอก</option></select></td></tr>
+                <tr><td><input type="checkbox" checked></td><td>116</td><td>10 อันดับโรค ผู้ป่วยใน</td><td>datestart,dateend</td><td><select><option>ผู้ป่วยใน</option></select></td></tr>
+                <tr><td><input type="checkbox" checked></td><td>392</td><td>รายงานขาดนัด คลินิกเบาหวาน</td><td>datestart,dateend</td><td><select><option>คลินิก NCD</option></select></td></tr>
+                <tr><td><input type="checkbox"></td><td>4</td><td>รายงานผู้ป่วย ความดัน ผู้ป่วย</td><td>datestart,dateend,bpst,bped</td><td><select><option>คลินิก NCD</option></select></td></tr>
+                <tr><td><input type="checkbox"></td><td>378</td><td>อันดับโรคทรุดลงส่งต่อ…Noooooooo</td><td class="muted">level 4 (ยกเลิก?)</td><td><select><option>— ข้าม —</option></select></td></tr>
+            </table></div>
+        </div>
+        <div class="modal-f"><button class="btn ghost" onclick="$('importModal').classList.remove('show')">ยกเลิก</button><button class="btn" onclick="$('importModal').classList.remove('show');toast('นำเข้า 3 รายงานเป็นร่างแล้ว')">นำเข้าที่เลือก</button></div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ---------------- mock data ----------------
+var GROUPS = [
+    { id: 'org', name: 'สถิติการให้บริการองค์กร', icon: '★', cat: 'ผู้บริหาร / คุณภาพ', desc: 'ตาราง 9.1–9.6 สำหรับ HA / แผนงาน' },
+    { id: 'opd', name: 'ผู้ป่วยนอก', icon: '⚕', cat: 'บริการ', desc: 'OPD, อันดับโรค, ภาระงาน' },
+    { id: 'ipd', name: 'ผู้ป่วยใน', icon: '🛏', cat: 'บริการ', desc: 'Admit, D/C, LOS, ครองเตียง' },
+    { id: 'ncd', name: 'คลินิก NCD', icon: '♥', cat: 'คลินิกพิเศษ', desc: 'DM, HT, CKD, Asthma, COPD' },
+    { id: 'refer', name: 'ส่งต่อ (Refer)', icon: '⇄', cat: 'บริการ', desc: 'Refer in / out / back' },
+    { id: 'er', name: 'อุบัติเหตุฉุกเฉิน', icon: '✚', cat: 'บริการ', desc: 'Triage, ER visit' },
+    { id: 'dq', name: 'ตรวจคุณภาพข้อมูล', icon: '✓', cat: 'ผู้บริหาร / คุณภาพ', desc: 'Dx ว่าง, สิทธิผิด, สถานะตายไม่ตรง' }
+];
+var ROLES = [
+    { id: 'admin', name: 'ผู้ดูแลระบบ', groups: ['org','opd','ipd','ncd','refer','er','dq'], export: true, patient: true, author: true, admin: true },
+    { id: 'ncd', name: 'เจ้าหน้าที่ NCD', groups: ['ncd','opd'], export: true, patient: true, author: true, admin: false },
+    { id: 'er', name: 'พยาบาล ER', groups: ['er','refer'], export: false, patient: false, author: false, admin: false },
+    { id: 'exec', name: 'ผู้บริหาร', groups: ['org','opd','ipd','ncd','refer','er'], export: true, patient: false, author: false, admin: false }
+];
+var USERS = [
+    { u: 'admin', name: 'ผู้ดูแลระบบ', dept: 'IT', roles: ['admin'], last: '12/10/2569 08:40' },
+    { u: 'ncd01', name: 'พยาบาลคลินิก NCD', dept: 'คลินิกเบาหวาน', roles: ['ncd'], last: '11/10/2569 15:12' },
+    { u: 'er02', name: 'พยาบาลห้องฉุกเฉิน', dept: 'ER', roles: ['er'], last: '12/10/2569 07:05' },
+    { u: 'dir', name: 'ผู้อำนวยการ', dept: 'บริหาร', roles: ['exec'], last: '10/10/2569 10:30' },
+    { u: 'qa01', name: 'ทีมคุณภาพ', dept: 'HA', roles: ['exec', 'ncd'], last: '09/10/2569 13:45' }
+];
+var REPORTS = [
+    { id: 1, group: 'org', name: 'สถิติการให้บริการที่สำคัญ (ตาราง 9.1)', views: ['table91'], params: ['fy'], desc: 'ปีงบประมาณ 4 คอลัมน์ ตามแบบฟอร์ม HA', dash: true, status: 'pub', ver: 5 },
+    { id: 2, group: 'opd', name: 'จำนวนผู้ป่วยนอก', views: ['number','chart'], params: ['date'], desc: "ovst an='0' และ sickdate != '0000-00-00'", kpi: { v: '155,259', sub: 'ครั้ง · 36,547 คน', trend: '-0.9%' }, dash: true, status: 'pub', ver: 3 },
+    { id: 3, group: 'ipd', name: 'อัตราครองเตียง', views: ['number','chart'], params: ['date'], desc: 'วันนอนจริง × 100 / (เตียง × วัน)', kpi: { v: '78.87%', sub: '74 เตียง · Active bed 58.36', trend: '+3.6%', target: 80, pct: 78.87 }, dash: true, status: 'pub', ver: 2 },
+    { id: 4, group: 'er', name: 'ผู้รับบริการ ER', views: ['number','chart'], params: ['date'], desc: 'visit ที่มีการคัดกรอง triage', kpi: { v: '45,434', sub: 'ครั้ง', trend: '+0.6%' }, dash: true, status: 'pub', ver: 1 },
+    { id: 5, group: 'ipd', name: 'LOS ผู้ป่วยใน', views: ['number'], params: ['date'], desc: 'ไม่รวม Home Ward', kpi: { v: '3.23', sub: 'วัน', trend: '-0.6%' }, dash: true, status: 'pub', ver: 2 },
+    { id: 6, group: 'opd', name: '10 อันดับโรคผู้ป่วยนอก', views: ['chart','list'], params: ['date'], desc: 'Dx ทุกตำแหน่ง ตัด U–Z', dash: true, status: 'pub', ver: 4 },
+    { id: 7, group: 'ncd', name: 'ผู้ป่วยคลินิกพิเศษ (คน/ครั้ง)', views: ['number','chart','list'], params: ['date'], desc: 'นับตาม ICD10 ทุกตำแหน่ง', kpi: { v: '5,164', sub: 'คน HT · 3,518 คน DM', trend: '+6.1%' }, dash: true, status: 'pub', ver: 2 },
+    { id: 8, group: 'opd', name: 'ผู้ป่วยนอกตามช่วงรหัสโรค ICD10', views: ['number','chart','list'], params: ['date','icd','clinic'], desc: 'ผู้ใช้กรอกช่วงรหัส ICD10 เอง เลือกคลินิกเพิ่มได้', kpi: { v: '20,658', sub: 'ครั้ง (I10–I159)', trend: '' }, dash: false, status: 'draft', ver: 4 },
+    { id: 9, group: 'ncd', name: 'รายชื่อผู้ป่วยขาดนัด คลินิกเบาหวาน', views: ['list'], params: ['date'], desc: 'นัดใน oapp แต่ไม่มา visit', dash: true, status: 'pub', ver: 1, person: true },
+    { id: 10, group: 'refer', name: '5 อันดับโรค Refer out', views: ['chart','list'], params: ['date'], desc: 'orfro ตัด V–Z', dash: true, status: 'pub', ver: 2 },
+    { id: 11, group: 'refer', name: 'รายชื่อผู้ป่วย Refer in', views: ['list'], params: ['date'], desc: 'ตาราง orfri', dash: false, status: 'pub', ver: 1, person: true },
+    { id: 12, group: 'er', name: 'Triage ER แยกระดับ', views: ['number','chart'], params: ['date'], desc: 'optriage level 1–5', dash: false, status: 'pub', ver: 1 },
+    { id: 13, group: 'ncd', name: 'ร้อยละผู้ป่วย DM ควบคุมน้ำตาลได้ดี (HbA1c < 7)', views: ['number','list'], params: ['fy'], desc: 'ตัวชี้วัด: ผลงาน / ผู้ป่วย DM ที่ตรวจ HbA1c × 100 · เกณฑ์ ≥ 40%', kpi: { v: '36.8%', sub: '1,021 / 2,774 คน', trend: '+2.1%', target: 40, pct: 36.8 }, dash: true, status: 'pub', ver: 1 },
+    { id: 14, group: 'opd', name: 'รายชื่อผู้ป่วยตามรหัสโรค', views: ['list'], params: ['date','icd'], desc: 'ใช้เป็นปลายทาง drill-down', dash: false, status: 'pub', ver: 1, person: true },
+    { id: 15, group: 'dq', name: 'Visit ผู้ป่วยนอกที่ไม่มี Dx', views: ['number','list'], params: ['date'], desc: 'ovst ที่ไม่มีแถวใน ovstdx', kpi: { v: '312', sub: 'visit รอลงรหัส', trend: '' }, dash: false, status: 'pub', ver: 1 },
+    { id: 16, group: 'dq', name: 'สถานะตายใน pt ไม่ตรงกับการจำหน่าย', views: ['list'], params: ['date'], desc: 'เทียบ pt.dthdate กับ ipt.dchtype 8,9', dash: false, status: 'pub', ver: 1, person: true }
+];
+var TOP_OPD = [['I10','Essential (primary) hypertension',20351,5127],['E785','Hyperlipidaemia, unspecified',14274,4535],['E119','NIDDM without complications',13712,3417],['T140','Superficial injury',11368,3402],['N183','CKD stage 3',5046,1440],['M626','Muscle strain',4710,3150],['K30','Dyspepsia',4402,2780],['J029','Acute pharyngitis',3910,3350],['J00','Common cold',3550,3010],['R51','Headache',2980,2510]];
+var REFER = [['I10','Essential hypertension',199,196],['E119','NIDDM',185,184],['H269','Cataract',158,155],['J189','Pneumonia',132,128],['T142','Fracture',90,90]];
+var NCD = [['เบาหวาน (E10–E14)',3518,16549],['เบาหวาน + ความดัน',2334,11858],['ความดันสูง (I10–I15)',5164,20658],['CKD 3–5',1964,8116],['หอบหืด (J45–J46)',548,1934],['COPD (J44)',302,1368],['จิตเวช (F00–F99)',3806,13407],['วัณโรค (A15–A19)',79,352]];
+var MONTHS = ['ต.ค.','พ.ย.','ธ.ค.','ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.'];
+var OPD_M = [12410, 12980, 12120, 13550, 12870, 13420, 11980, 13110, 13360, 13540, 12960, 12939];
+var OPD_M_PREV = [11840, 12510, 12030, 13020, 12650, 13180, 12260, 13010, 13300, 13490, 12850, 12600];
+var MISSED = [['12/09/2569','6612***','นาย ส*** ใ***',67,'E119','082-***-4411'],['12/09/2569','5523***','นาง บ*** ศ***',59,'E112','089-***-0920'],['15/09/2569','7801***','นาง ม*** ค***',72,'E119','-'],['18/09/2569','3390***','นาย ท*** พ***',64,'E119','061-***-7733'],['20/09/2569','4127***','นางสาว ว*** ร***',55,'E119','095-***-1180']];
+var T91 = [
+    ['1','จำนวนผู้ป่วยนอก','ครั้ง/คน','137,282 / 35,650','142,277 / 35,308','155,259 / 36,547','5,440 / 4,051'],
+    ['2','จำนวนผู้ป่วยใน','คน/วันนอน','8,088 / 22,304','7,258 / 30,447','7,898 / 37,552','266 / 1,228'],
+    ['3','อุบัติเหตุฉุกเฉินและนิติเวช','คน','46,209','45,145','45,434','1,535'],
+    ['4','มารดาคลอด','คน','122','90','100','7'],
+    ['5','case SEMI-ICU','คน','','177','',''],
+    ['7','อัตราการครองเตียง','ร้อยละ','73.70','75.25','78.87','75.11'],
+    ['8','Active bed','เตียง','54.54','55.69','58.36','55.58'],
+    ['9','LOS','วัน','2.70','3.25','3.23','2.94']
+];
+
+// ---------------- state ----------------
+var role = 'admin';
+var dashSel = REPORTS.filter(function (r) { return r.dash; }).map(function (r) { return r.id; });
+try { var s = localStorage.getItem('hisrep_dash_v2'); if (s) dashSel = JSON.parse(s); } catch (e) {}
+
+function $(id) { return document.getElementById(id); }
+function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+function fmt(n) { return Number(n).toLocaleString('en-US'); }
+function each(list, fn) { Array.prototype.forEach.call(list, fn); }
+function roleObj() { return ROLES.filter(function (r) { return r.id === role; })[0]; }
+function canSee(r) { return roleObj().groups.indexOf(r.group) >= 0; }
+function groupOf(id) { return GROUPS.filter(function (g) { return g.id === id; })[0]; }
+function reportOf(id) { return REPORTS.filter(function (r) { return r.id === +id; })[0]; }
+function toast(msg) { var t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(function () { t.classList.remove('show'); }, 2600); }
+
+// ---------------- charts (SVG) ----------------
+function barChart(rows, opt) {
+    opt = opt || {};
+    var w = 640, rowH = 26, pad = 170, h = rows.length * rowH + 10;
+    var max = Math.max.apply(null, rows.map(function (r) { return r[1]; }));
+    var color = opt.color || '#1b64b5';
+    var out = '<svg viewBox="0 0 ' + w + ' ' + h + '" role="img">';
+    rows.forEach(function (r, i) {
+        var y = i * rowH + 4, bw = (w - pad - 70) * r[1] / max;
+        out += '<text x="' + (pad - 8) + '" y="' + (y + 16) + '" text-anchor="end" font-size="13" fill="#3a4a5e">' + esc(r[0]) + '</text>';
+        out += '<rect x="' + pad + '" y="' + (y + 3) + '" width="' + bw + '" height="17" rx="3" fill="' + color + '"><title>' + esc(r[0]) + ': ' + fmt(r[1]) + '</title></rect>';
+        out += '<text x="' + (pad + bw + 6) + '" y="' + (y + 16) + '" font-size="12" fill="#627083">' + fmt(r[1]) + '</text>';
+    });
+    return '<div class="chart">' + out + '</svg></div>';
+}
+function lineChart(labels, series) {
+    var w = 640, h = 220, pl = 50, pb = 26, pt = 10;
+    var all = []; series.forEach(function (s) { all = all.concat(s.data); });
+    var min = Math.floor(Math.min.apply(null, all) / 1000) * 1000 - 1000, max = Math.ceil(Math.max.apply(null, all) / 1000) * 1000;
+    var gx = (w - pl - 20) / (labels.length - 1);
+    function y(v) { return h - pb - (h - pb - pt) * (v - min) / (max - min); }
+    var out = '<svg viewBox="0 0 ' + w + ' ' + h + '">';
+    for (var k = 0; k <= 4; k++) { var v = min + (max - min) * k / 4; out += '<line x1="' + pl + '" x2="' + w + '" y1="' + y(v) + '" y2="' + y(v) + '" stroke="#e6ebf2"/><text x="' + (pl - 6) + '" y="' + (y(v) + 4) + '" text-anchor="end" font-size="11" fill="#8090a3">' + fmt(Math.round(v / 100) / 10) + 'k</text>'; }
+    labels.forEach(function (l, i) { out += '<text x="' + (pl + gx * i) + '" y="' + (h - 6) + '" text-anchor="middle" font-size="12" fill="#3a4a5e">' + l + '</text>'; });
+    series.forEach(function (s) {
+        out += '<polyline fill="none" stroke="' + s.color + '" stroke-width="2.5"' + (s.dash ? ' stroke-dasharray="5 4"' : '') + ' points="' + s.data.map(function (v, i) { return (pl + gx * i) + ',' + y(v); }).join(' ') + '"/>';
+        s.data.forEach(function (v, i) { out += '<circle cx="' + (pl + gx * i) + '" cy="' + y(v) + '" r="3" fill="' + s.color + '"><title>' + esc(s.name) + ' ' + labels[i] + ': ' + fmt(v) + '</title></circle>'; });
+    });
+    out += '</svg>';
+    return '<div class="chart">' + out + '<div class="legend">' + series.map(function (s) { return '<span><i style="background:' + s.color + '"></i>' + esc(s.name) + '</span>'; }).join('') + '</div></div>';
+}
+
+// ---------------- renderers ----------------
+function table91() {
+    var h = '<div class="tbl-wrap"><table class="bordered"><tr><th class="c">ลำดับ</th><th>ผลงาน / ตัวชี้วัด</th><th class="c">หน่วยนับ</th><th class="num">ปี 2567</th><th class="num">ปี 2568</th><th class="num">ปี 2569</th><th class="num">ปี 2570 (2ด.)</th></tr>';
+    T91.forEach(function (r) { h += '<tr><td class="c">' + r[0] + '</td><td>' + r[1] + '</td><td class="c">' + r[2] + '</td><td class="num">' + r[3] + '</td><td class="num">' + r[4] + '</td><td class="num">' + r[5] + '</td><td class="num">' + r[6] + '</td></tr>'; });
+    return h + '</table></div><div class="muted small" style="margin-top:6px">แสดงบางแถว — รายงานเต็มเหมือน index.php (9.1–9.6)</div>';
+}
+function rankTable(rows) {
+    var max = rows[0][2], tv = 0;
+    var h = '<div class="toolbar" style="margin-bottom:8px"><input placeholder="ค้นหาในตาราง" style="padding:5px 8px;border:1px solid var(--line);border-radius:6px"><span class="muted small">คลิกรหัสโรคเพื่อดูรายชื่อผู้ป่วย (drill-down)</span></div>';
+    h += '<div class="tbl-wrap"><table><tr><th class="c">#</th><th>รหัสโรค ▾</th><th>ชื่อโรค</th><th class="num">ครั้ง ▾</th><th class="num">คน</th></tr>';
+    rows.forEach(function (r, i) {
+        tv += r[2];
+        h += '<tr><td class="c">' + (i + 1) + '</td><td><span class="drill" onclick="drill(\'' + r[0] + '\')">' + r[0] + '</span></td><td>' + esc(r[1]) + '</td><td class="num"><div class="bar-cell"><i style="width:' + Math.round(60 * r[2] / max) + 'px"></i>' + fmt(r[2]) + '</div></td><td class="num">' + fmt(r[3]) + '</td></tr>';
+    });
+    return h + '<tr class="total"><td></td><td colspan="2">รวม</td><td class="num">' + fmt(tv) + '</td><td class="num muted small">ไม่รวม (คนซ้ำได้)</td></tr></table></div>';
+}
+function patientTable() {
+    var full = roleObj().patient;
+    var h = '<div class="tbl-wrap"><table><tr><th>วันนัด</th><th>HN</th><th>ชื่อ-สกุล</th><th class="num">อายุ</th><th>Dx</th><th>โทรศัพท์</th></tr>';
+    MISSED.forEach(function (r) { h += '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td><td>' + (full ? r[2] : '•••••• (ปิดบัง)') + '</td><td class="num">' + r[3] + '</td><td>' + r[4] + '</td><td>' + (full ? r[5] : '•••') + '</td></tr>'; });
+    return h + '</table></div><div class="muted small" style="margin-top:6px">ข้อมูลตัวอย่าง · ' + (full ? 'Role นี้ดูข้อมูลบุคคลได้ — การเปิดนี้ถูกบันทึกใน log' : 'Role นี้ไม่มีสิทธิ์ดูข้อมูลบุคคล — ระบบปิดบังทั้งบนจอและใน Excel') + '</div>';
+}
+function kpiHtml(r) {
+    var k = r.kpi || { v: '-', sub: '' };
+    var tr = k.trend ? '<span class="' + (k.trend[0] === '-' ? 'down' : 'up') + '">' + k.trend + ' จากปีก่อน</span>' : '';
+    var tg = '';
+    if (k.target) {
+        var pass = k.pct >= k.target, warn = !pass && k.pct >= k.target - 10;
+        var col = pass ? 'var(--green)' : (warn ? 'var(--amber)' : 'var(--red)');
+        tg = '<div class="target">เป้าหมาย ≥ ' + k.target + '% <span class="chip ' + (pass ? 'green' : (warn ? 'amber' : 'red')) + '">' + (pass ? 'ผ่าน' : 'ยังไม่ผ่าน') + '</span><div class="meter"><i style="width:' + Math.min(100, k.pct) + '%;background:' + col + '"></i></div></div>';
+    }
+    return '<div class="kpi"><div class="lbl"><span>' + esc(r.name) + '</span><span class="chip gray">' + esc(groupOf(r.group).name) + '</span></div><div class="val">' + k.v + '</div><div class="sub">' + k.sub + ' ' + tr + '</div>' + tg + '</div>';
+}
+function viewContent(r, view) {
+    if (view === 'table91') return table91();
+    if (view === 'number') {
+        if (r.id === 7) return '<div class="grid g4">' + NCD.map(function (n) { return '<div class="card kpi"><div class="lbl">' + n[0] + '</div><div class="val" style="font-size:22px">' + fmt(n[1]) + '</div><div class="sub">คน · ' + fmt(n[2]) + ' ครั้ง</div></div>'; }).join('') + '</div>';
+        return kpiHtml(r);
+    }
+    if (view === 'chart') {
+        if (r.id === 6 || r.id === 8) return barChart(TOP_OPD.map(function (x) { return [x[0] + ' ' + x[1].slice(0, 18), x[2]]; }));
+        if (r.id === 10) return barChart(REFER.map(function (x) { return [x[0] + ' ' + x[1], x[2]]; }), { color: '#0f8b8d' });
+        if (r.id === 7) return barChart(NCD.map(function (x) { return [x[0], x[1]]; }), { color: '#0f8b8d' });
+        return lineChart(MONTHS, [{ name: 'ปีงบ 2569', color: '#1b64b5', data: OPD_M }, { name: 'ปีงบ 2568', color: '#9fb3c8', dash: true, data: OPD_M_PREV }]);
+    }
+    if (view === 'list') {
+        if (r.id === 6 || r.id === 8) return rankTable(TOP_OPD);
+        if (r.id === 10) return rankTable(REFER);
+        if (r.id === 7) return '<div class="tbl-wrap"><table><tr><th>คลินิก</th><th class="num">คน</th><th class="num">ครั้ง</th></tr>' + NCD.map(function (n) { return '<tr><td>' + n[0] + '</td><td class="num">' + fmt(n[1]) + '</td><td class="num">' + fmt(n[2]) + '</td></tr>'; }).join('') + '</table></div>';
+        return patientTable();
+    }
+    return '';
+}
+var VIEW_LABEL = { number: '# ตัวเลข', chart: '▥ กราฟ', list: '☰ ตาราง/รายชื่อ', table91: '▦ ตารางเทียบปีงบ' };
+function drill(code) { toast('เปิด "รายชื่อผู้ป่วยตามรหัสโรค" ด้วย icd10=' + code + ' และช่วงวันที่เดิม'); setTimeout(function () { location.hash = 'report/14'; }, 600); }
+
+// ---------------- dashboard ----------------
+function renderDashboard() {
+    var list = REPORTS.filter(function (r) { return dashSel.indexOf(r.id) >= 0 && canSee(r); });
+    var html = '';
+    list.forEach(function (r) { if (r.views[0] === 'number' && r.id !== 7) html += '<div class="card widget">' + kpiHtml(r) + '</div>'; });
+    list.forEach(function (r) {
+        if (r.views[0] === 'number' && r.id !== 7) return;
+        var v = r.views.indexOf('chart') >= 0 ? 'chart' : r.views[0];
+        var wide = (v === 'table91') ? 'span-all' : 'span2';
+        html += '<div class="card widget ' + wide + '"><div class="card-h"><span class="muted" title="ลากเพื่อจัดตำแหน่ง" style="cursor:grab">⋮⋮</span><h3>' + esc(r.name) + '</h3><div class="spacer"></div><span class="muted small">' + VIEW_LABEL[v] + '</span><a class="btn ghost sm" href="#report/' + r.id + '">เปิด</a>' + (roleObj().export ? '<button class="btn ghost sm" onclick="toast(\'Export Excel: ' + esc(r.name) + '\')">⭳</button>' : '') + '</div><div class="card-b">' + viewContent(r, v) + '</div></div>';
+    });
+    if (!list.length) html = '<div class="card span-all"><div class="card-b muted">ยังไม่ได้เลือกรายงาน — กด "เลือกรายงานที่แสดง"</div></div>';
+    $('widgets').innerHTML = html;
+}
+function openPicker() {
+    var h = '';
+    GROUPS.forEach(function (g) {
+        var rs = REPORTS.filter(function (r) { return r.group === g.id && canSee(r) && r.status === 'pub'; });
+        if (!rs.length) return;
+        h += '<div class="pick-group"><h5>' + g.icon + ' ' + esc(g.name) + '</h5>';
+        rs.forEach(function (r) {
+            h += '<label class="pick"><input type="checkbox" value="' + r.id + '"' + (dashSel.indexOf(r.id) >= 0 ? ' checked' : '') + '><span>' + esc(r.name) + '</span><span class="spacer"></span><select style="font-size:12px;padding:2px"><option>แสดงเป็น: ' + VIEW_LABEL[r.views.indexOf('chart') >= 0 ? 'chart' : r.views[0]] + '</option>' + r.views.map(function (v) { return '<option>' + VIEW_LABEL[v] + '</option>'; }).join('') + '</select><select style="font-size:12px;padding:2px"><option>กว้าง 1/2</option><option>เต็มแถว</option><option>1/4</option></select></label>';
+        });
+        h += '</div>';
+    });
+    $('pickerBody').innerHTML = h + '<div class="muted small">แสดงเฉพาะรายงานที่เผยแพร่แล้ว ในหัวข้อที่ Role ของคุณมีสิทธิ์ · ช่วงเวลาใช้ตัวกรองด้านบนของ Dashboard</div>';
+    $('picker').classList.add('show');
+}
+function closePicker() { $('picker').classList.remove('show'); }
+function savePicker() {
+    dashSel = Array.prototype.map.call($('pickerBody').querySelectorAll('input:checked'), function (i) { return +i.value; });
+    try { localStorage.setItem('hisrep_dash_v2', JSON.stringify(dashSel)); } catch (e) {}
+    closePicker(); renderDashboard(); toast('บันทึก Dashboard แล้ว');
+}
+
+// ---------------- report view ----------------
+function setExportVisible() { each(document.querySelectorAll('.export-btn'), function (b) { b.classList.toggle('hide', !roleObj().export); }); }
+function renderReport(id) {
+    var r = reportOf(id);
+    if (!r || !canSee(r)) {
+        $('rvCrumb').textContent = ''; $('rvTitle').textContent = 'ไม่มีสิทธิ์เข้าถึงรายงานนี้'; $('rvDesc').textContent = 'การเข้าถึงนี้ถูกบันทึกใน log — ติดต่อผู้ดูแลระบบเพื่อขอสิทธิ์';
+        $('rvParams').innerHTML = ''; $('rvTabs').innerHTML = ''; $('rvBody').innerHTML = ''; $('rvMeta').textContent = ''; return;
+    }
+    var g = groupOf(r.group);
+    $('rvCrumb').innerHTML = esc(g.cat) + ' › <a href="#group/' + g.id + '">' + esc(g.name) + '</a>';
+    $('rvTitle').textContent = r.name;
+    $('rvDesc').innerHTML = '<b>นิยาม:</b> ' + esc(r.desc) + ' · <a href="#" onclick="toast(\'แสดง SQL ที่ใช้ (อ่านอย่างเดียว) สำหรับผู้มีสิทธิ์สร้างรายงาน\');return false">ดู SQL</a> · <a href="#request">แจ้งตัวเลขผิดปกติ</a>';
+    var p = '';
+    if (r.params.indexOf('fy') >= 0) p += '<div class="field"><span>ปีงบประมาณ</span><select><option>2569</option><option>2568</option><option>2567</option></select></div>';
+    if (r.params.indexOf('date') >= 0) p += '<div class="field"><span>ช่วงวันที่ *</span><div style="display:flex;gap:6px;flex-wrap:wrap"><input type="date" value="2025-10-01" style="padding:6px;border:1px solid var(--line);border-radius:7px"><input type="date" value="2026-09-30" style="padding:6px;border:1px solid var(--line);border-radius:7px"></div><div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap"><button class="preset">เดือนนี้</button><button class="preset">เดือนก่อน</button><button class="preset">ไตรมาสนี้</button><button class="preset on">ปีงบนี้</button></div></div>';
+    if (r.params.indexOf('icd') >= 0) p += '<div class="field"><span>ICD10 ตั้งแต่ *</span><input value="I10" style="width:90px"></div><div class="field"><span>ถึง *</span><input value="I159" style="width:90px"></div>';
+    if (r.params.indexOf('clinic') >= 0) p += '<div class="field"><span>คลินิก (ไม่เลือก = ทุกคลินิก)</span><div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center;border:1px solid var(--line);border-radius:7px;padding:5px;background:#fff"><span class="chip x">คลินิกความดันสูง ✕</span><span class="chip x">งานบริการผู้ป่วยนอก ✕</span><select style="border:0;font-size:13px"><option>＋ เพิ่ม…</option><option>คลินิกเบาหวาน</option><option>ห้องฉุกเฉิน</option></select></div></div>';
+    p += '<button class="btn" onclick="toast(\'ประมวลผลรายงาน (ตัวอย่าง)\')">▶ ประมวลผล</button>';
+    $('rvParams').innerHTML = p;
+    $('rvTabs').innerHTML = r.views.map(function (v, i) { return '<button data-v="' + v + '"' + (i === 0 ? ' class="on"' : '') + '>' + VIEW_LABEL[v] + '</button>'; }).join('');
+    each($('rvTabs').children, function (b) {
+        b.onclick = function () { each($('rvTabs').children, function (x) { x.classList.remove('on'); }); b.classList.add('on'); $('rvBody').innerHTML = viewContent(r, b.dataset.v); };
+    });
+    $('rvBody').innerHTML = viewContent(r, r.views[0]);
+    $('rvMeta').textContent = 'ข้อมูล ณ 08:30 (cache) · 1.8 วิ' + (r.person ? ' · มีข้อมูลบุคคล' : '');
+    setExportVisible();
+}
+function renderGroup(id) {
+    var g = groupOf(id);
+    var rs = REPORTS.filter(function (r) { return r.group === id && canSee(r) && r.status === 'pub'; });
+    $('rvCrumb').textContent = g.cat;
+    $('rvTitle').textContent = g.icon + ' ' + g.name;
+    $('rvDesc').textContent = g.desc;
+    $('rvParams').innerHTML = '<input placeholder="ค้นหารายงานในหัวข้อนี้" style="padding:6px 9px;border:1px solid var(--line);border-radius:7px;min-width:260px">';
+    $('rvTabs').innerHTML = '<button class="on">รายงานในหัวข้อนี้ (' + rs.length + ')</button>';
+    $('rvMeta').textContent = '';
+    each(document.querySelectorAll('#page-report .export-btn'), function (b) { b.classList.add('hide'); });
+    $('rvBody').innerHTML = '<div class="grid g2">' + rs.map(function (r) {
+        return '<a class="card" href="#report/' + r.id + '" style="text-decoration:none;color:inherit"><div class="card-b"><b>' + esc(r.name) + '</b><div class="muted small" style="margin:4px 0 8px">' + esc(r.desc) + '</div>' + r.views.map(function (v) { return '<span class="chip">' + VIEW_LABEL[v] + '</span>'; }).join('') + (r.params.indexOf('icd') >= 0 ? '<span class="chip amber">เงื่อนไข ICD10</span>' : '') + (r.person ? '<span class="chip red">ข้อมูลบุคคล</span>' : '') + (r.kpi && r.kpi.target ? '<span class="chip teal">ตัวชี้วัด</span>' : '') + '</div></a>';
+    }).join('') + '</div>';
+}
+function renderFavorites() {
+    var fav = [1, 6, 9].map(reportOf).filter(canSee), rec = [8, 3, 13, 10, 2].map(reportOf).filter(canSee);
+    function li(r, extra) { return '<div style="padding:8px 0;border-bottom:1px solid var(--line)"><a href="#report/' + r.id + '"><b>' + esc(r.name) + '</b></a><div class="muted small">' + esc(groupOf(r.group).name) + (extra ? ' · ' + extra : '') + '</div></div>'; }
+    $('favList').innerHTML = fav.length ? fav.map(function (r) { return li(r); }).join('') : '<span class="muted">ยังไม่มี</span>';
+    $('recentList').innerHTML = rec.length ? rec.map(function (r, i) { return li(r, ['09:10 วันนี้', '08:52 วันนี้', 'เมื่อวาน 15:40', 'เมื่อวาน 10:02', '10/10/2569'][i] + ' · เงื่อนไขล่าสุดถูกจำไว้'); }).join('') : '<span class="muted">ยังไม่มี</span>';
+}
+function quickSearch(q) {
+    q = q.trim().toLowerCase();
+    if (!q) { if (location.hash === '#search') location.hash = 'dashboard'; return; }
+    var rs = REPORTS.filter(function (r) { return canSee(r) && (r.name + ' ' + r.desc + ' ' + groupOf(r.group).name).toLowerCase().indexOf(q) >= 0; });
+    $('searchTitle').textContent = 'ผลการค้นหา "' + q + '" (' + rs.length + ')';
+    $('searchBody').innerHTML = rs.length ? rs.map(function (r) { return '<div style="padding:8px 0;border-bottom:1px solid var(--line)"><a href="#report/' + r.id + '"><b>' + esc(r.name) + '</b></a><div class="muted small">' + esc(groupOf(r.group).name) + ' · ' + esc(r.desc) + '</div></div>'; }).join('') : '<span class="muted">ไม่พบ (แสดงเฉพาะรายงานที่คุณมีสิทธิ์)</span>';
+    if (location.hash !== '#search') location.hash = 'search'; else showPage('search');
+}
+
+// ---------------- admin ----------------
+function renderAdminReports() {
+    $('arGroup').innerHTML = '<option>ทั้งหมด</option>' + GROUPS.map(function (g) { return '<option>' + esc(g.name) + '</option>'; }).join('');
+    var h = '<tr><th>#</th><th>ชื่อรายงาน</th><th>หัวข้อ</th><th>เงื่อนไข</th><th>การแสดงผล</th><th>สถานะ</th><th class="c">ใช้งาน 30 วัน</th><th></th></tr>';
+    REPORTS.forEach(function (r) {
+        var prm = r.params.map(function (p) { return { date: '<span class="chip gray">ช่วงวันที่</span>', fy: '<span class="chip gray">ปีงบ</span>', icd: '<span class="chip amber">ICD10</span>', clinic: '<span class="chip amber">คลินิก (หลายค่า)</span>' }[p]; }).join('');
+        var st = r.status === 'pub' ? '<span class="chip green">เผยแพร่ v' + r.ver + '</span>' : '<span class="chip amber">ร่าง v' + r.ver + '</span>';
+        h += '<tr><td>' + r.id + '</td><td><b>' + esc(r.name) + '</b>' + (r.person ? ' <span class="chip red">บุคคล</span>' : '') + '<div class="muted small">' + esc(r.desc) + '</div></td><td>' + esc(groupOf(r.group).name) + '</td><td>' + prm + '</td><td>' + r.views.map(function (v) { return '<span class="chip">' + VIEW_LABEL[v] + '</span>'; }).join('') + '</td><td>' + st + '</td><td class="c">' + ((r.id * 37) % 140) + '</td><td style="white-space:nowrap"><a class="btn ghost sm" href="#admin-report-edit">แก้ไข</a> <button class="btn ghost sm" onclick="toast(\'คัดลอกเป็นรายงานใหม่ (ร่าง)\')">คัดลอก</button></td></tr>';
+    });
+    $('arTable').innerHTML = h;
+}
+var PARAMS = [
+    ['date', 'ช่วงวันที่', 'ช่วงวันที่', 'ต้นปีงบ – วันนี้', true, false],
+    ['icd_from', 'ICD10 ตั้งแต่', 'รหัส ICD10', 'I10', true, false],
+    ['icd_to', 'ICD10 ถึง', 'รหัส ICD10', 'I159', true, false],
+    ['clinic', 'คลินิก', 'ตัวเลือกจาก SQL', 'SELECT cln, namecln FROM cln', false, true],
+    ['pttype', 'สิทธิการรักษา', 'ตัวเลือกจาก SQL', 'SELECT pttype, namepttype FROM pttype', false, true]
+];
+var PTYPES = ['ช่วงวันที่', 'วันที่', 'ปีงบประมาณ', 'รหัส ICD10', 'ข้อความ', 'ตัวเลข', 'ตัวเลือก (กำหนดเอง)', 'ตัวเลือกจาก SQL'];
+function renderParams() {
+    var h = '<tr><th>ตัวแปร</th><th>ป้ายชื่อ</th><th>ชนิด</th><th>ค่าเริ่มต้น / ตัวเลือก</th><th class="c">บังคับ</th><th class="c">หลายค่า</th><th></th></tr>';
+    PARAMS.forEach(function (p, i) {
+        h += '<tr><td><input value="' + esc(p[0]) + '"></td><td><input value="' + esc(p[1]) + '"></td><td><select>' + PTYPES.map(function (t) { return '<option' + (t === p[2] ? ' selected' : '') + '>' + t + '</option>'; }).join('') + '</select></td><td><input value="' + esc(p[3]) + '" style="min-width:220px"></td><td class="c"><input type="checkbox"' + (p[4] ? ' checked' : '') + ' style="width:auto"></td><td class="c"><input type="checkbox"' + (p[5] ? ' checked' : '') + ' style="width:auto"></td><td><button class="btn danger sm" onclick="PARAMS.splice(' + i + ',1);renderParams()">ลบ</button></td></tr>';
+    });
+    $('paramTbl').innerHTML = h;
+}
+function addParam() { PARAMS.push(['param' + (PARAMS.length + 1), '', 'ข้อความ', '', false, false]); renderParams(); }
+function testQuery() {
+    each(document.querySelectorAll('#editTabs button'), function (x) { x.classList.toggle('on', x.dataset.t === 'sql'); });
+    each(document.querySelectorAll('.et'), function (e) { e.classList.toggle('hide', e.id !== 'et-sql'); });
+    $('testResult').innerHTML = '<div style="color:var(--green);font-weight:600">✓ รันสำเร็จ</div><div class="muted">87 แถว · 0.9 วินาที · ใช้ index idx vstdttm ✓</div><div style="margin:6px 0">ค่าที่ใช้: date=2025-10-01..2026-09-30, icd I10–I159, clinic=(ไม่เลือก → ตัดเงื่อนไขเสริม)</div><div>คอลัมน์: <code>icd10</code> <code>icd10name</code> <code>visit</code> <code>person</code></div><div class="tbl-wrap" style="margin-top:6px"><table><tr><th>icd10</th><th class="num">visit</th><th class="num">person</th></tr><tr><td>I10</td><td class="num">20,351</td><td class="num">5,127</td></tr><tr><td>I119</td><td class="num">214</td><td class="num">88</td></tr><tr><td>I150</td><td class="num">93</td><td class="num">41</td></tr></table></div>';
+}
+function renderGroups() {
+    var h = '<tr><th>หมวดหลัก</th><th>หัวข้อรายงาน</th><th>คำอธิบาย</th><th class="num">รายงาน</th><th>Role ที่เข้าถึง</th><th></th></tr>';
+    GROUPS.forEach(function (g) {
+        var n = REPORTS.filter(function (r) { return r.group === g.id; }).length;
+        var rl = ROLES.filter(function (r) { return r.groups.indexOf(g.id) >= 0; }).map(function (r) { return '<span class="chip teal">' + esc(r.name) + '</span>'; }).join('');
+        h += '<tr><td class="muted">' + esc(g.cat) + '</td><td><b>' + g.icon + ' ' + esc(g.name) + '</b></td><td class="muted">' + esc(g.desc) + '</td><td class="num">' + n + '</td><td>' + rl + '</td><td style="white-space:nowrap"><button class="btn ghost sm" onclick="toast(\'แก้ไขหัวข้อ (ตัวอย่าง)\')">แก้ไข</button> <button class="btn ghost sm" title="เลื่อนขึ้น">↑</button><button class="btn ghost sm" title="เลื่อนลง">↓</button></td></tr>';
+    });
+    $('grpTable').innerHTML = h;
+}
+function renderMatrix() {
+    var h = '<tr><th>Role</th>' + GROUPS.map(function (g) { return '<th>' + g.icon + '<br><span class="small">' + esc(g.name) + '</span></th>'; }).join('') + '<th>Export</th><th>ดูข้อมูล<br>บุคคล</th><th>สร้าง<br>รายงาน</th><th>ผู้ดูแล<br>ระบบ</th></tr>';
+    ROLES.forEach(function (r, ri) {
+        var n = USERS.filter(function (u) { return u.roles.indexOf(r.id) >= 0; }).length;
+        h += '<tr><td><b>' + esc(r.name) + '</b><div class="muted small">' + n + ' ผู้ใช้</div></td>';
+        GROUPS.forEach(function (g) { h += '<td><input type="checkbox" data-r="' + ri + '" data-g="' + g.id + '"' + (r.groups.indexOf(g.id) >= 0 ? ' checked' : '') + '></td>'; });
+        ['export', 'patient', 'author', 'admin'].forEach(function (k) { h += '<td><input type="checkbox" data-r="' + ri + '" data-k="' + k + '"' + (r[k] ? ' checked' : '') + '></td>'; });
+        h += '</tr>';
+    });
+    $('matrix').innerHTML = h + '<tr><td colspan="' + (GROUPS.length + 5) + '"><button class="btn alt sm" onclick="toast(\'เพิ่ม Role (ตัวอย่าง)\')">＋ เพิ่ม Role</button></td></tr>';
+    each($('matrix').querySelectorAll('input'), function (cb) {
+        cb.onchange = function () {
+            var r = ROLES[+cb.dataset.r];
+            if (cb.dataset.g) { var i = r.groups.indexOf(cb.dataset.g); if (cb.checked && i < 0) r.groups.push(cb.dataset.g); if (!cb.checked && i >= 0) r.groups.splice(i, 1); }
+            else r[cb.dataset.k] = cb.checked;
+            renderNav(true);
+        };
+    });
+}
+function renderUsers() {
+    var h = '<tr><th>ชื่อผู้ใช้ (HIS)</th><th>ชื่อ</th><th>หน่วยงาน</th><th>Role (ได้หลาย Role)</th><th>เข้าใช้ล่าสุด</th><th>สถานะ</th><th></th></tr>';
+    USERS.forEach(function (u) {
+        h += '<tr><td><b>' + u.u + '</b></td><td>' + esc(u.name) + '</td><td>' + esc(u.dept) + '</td><td>' + u.roles.map(function (id) { return '<span class="chip teal">' + esc(ROLES.filter(function (r) { return r.id === id; })[0].name) + ' ✕</span>'; }).join('') + ' <button class="btn ghost sm">＋</button></td><td class="muted">' + u.last + '</td><td><span class="chip green">ใช้งาน</span></td><td><button class="btn ghost sm" onclick="toast(\'ดู log ของ ' + u.u + '\')">log</button></td></tr>';
+    });
+    $('userTable').innerHTML = h;
+}
+function openImport() { $('importModal').classList.add('show'); }
+
+// ---------------- nav / routing ----------------
+function renderNav(keepPage) {
+    $('groupNav').innerHTML = GROUPS.filter(function (g) { return roleObj().groups.indexOf(g.id) >= 0; }).map(function (g) {
+        var n = REPORTS.filter(function (r) { return r.group === g.id && r.status === 'pub'; }).length;
+        return '<a href="#group/' + g.id + '" data-page="group/' + g.id + '"><span class="ic">' + g.icon + '</span>' + esc(g.name) + '<span class="count">' + n + '</span></a>';
+    }).join('');
+    $('adminNav').classList.toggle('hide', !roleObj().admin);
+    setExportVisible();
+    if (!keepPage) route();
+}
+function applyRole() {
+    role = $('roleSwitch').value;
+    var r = roleObj();
+    $('userRole').textContent = r.name;
+    $('userName').textContent = { admin: 'admin', ncd: 'ncd01', er: 'er02', exec: 'dir' }[role];
+    $('avatar').textContent = $('userName').textContent[0].toUpperCase();
+    if (!r.admin && location.hash.indexOf('#admin') === 0) location.hash = 'dashboard';
+    renderNav();
+    toast('เปลี่ยนมุมมองเป็น: ' + r.name);
+}
+var TITLES = { 'dashboard': 'Dashboard', 'favorites': 'รายงานโปรด / ล่าสุด', 'search': 'ค้นหารายงาน', 'request': 'ขอรายงานใหม่', 'admin-reports': 'จัดการรายงาน', 'admin-report-edit': 'สร้าง / แก้ไขรายงาน', 'admin-groups': 'หัวข้อรายงาน', 'admin-users': 'ผู้ใช้และสิทธิ์', 'admin-requests': 'คำขอรายงาน', 'admin-audit': 'ประวัติการใช้งาน', 'admin-settings': 'ตั้งค่าระบบ', 'spec': 'ข้อกำหนดระบบ' };
+function showPage(pid) { each(document.querySelectorAll('.page'), function (p) { p.classList.toggle('show', p.id === 'page-' + pid); }); }
+function route() {
+    var h = (location.hash || '#dashboard').slice(1);
+    var parts = h.split('/');
+    var page = parts[0];
+    if (page.indexOf('admin') === 0 && !roleObj().admin) page = 'dashboard';
+    var pid = (page === 'group' || page === 'report') ? 'report' : page;
+    showPage(pid);
+    var rep = page === 'report' ? reportOf(parts[1]) : null;
+    each(document.querySelectorAll('.nav a'), function (a) {
+        var dp = a.dataset.page;
+        a.classList.toggle('active', dp === h || (rep && dp === 'group/' + rep.group) || (page === 'admin-report-edit' && dp === 'admin-reports'));
+    });
+    if (page === 'dashboard') renderDashboard();
+    if (page === 'favorites') renderFavorites();
+    if (page === 'report') renderReport(parts[1]);
+    if (page === 'group') renderGroup(parts[1]);
+    if (page === 'admin-reports') renderAdminReports();
+    if (page === 'admin-report-edit') { $('reGroup').innerHTML = GROUPS.map(function (g) { return '<option' + (g.id === 'opd' ? ' selected' : '') + '>' + esc(g.name) + '</option>'; }).join(''); renderParams(); }
+    if (page === 'admin-groups') renderGroups();
+    if (page === 'admin-users') { renderMatrix(); renderUsers(); }
+    $('pageTitle').textContent = TITLES[page] || (page === 'group' ? 'หัวข้อรายงาน' : 'รายงาน');
+    $('side').classList.remove('open');
+    window.scrollTo(0, 0);
+}
+function bindTabs(sel, onPick) {
+    each(document.querySelectorAll(sel), function (b) {
+        b.onclick = function () { each(document.querySelectorAll(sel), function (x) { x.classList.toggle('on', x === b); }); onPick(b); };
+    });
+}
+bindTabs('#userTabs button', function (b) { $('ut-roles').classList.toggle('hide', b.dataset.t !== 'roles'); $('ut-users').classList.toggle('hide', b.dataset.t !== 'users'); });
+bindTabs('#editTabs button', function (b) { each(document.querySelectorAll('.et'), function (e) { e.classList.toggle('hide', e.id !== 'et-' + b.dataset.t); }); });
+bindTabs('#dashTabs button:not(:last-child)', function (b) { if (b.textContent.indexOf('ของฉัน') < 0) toast('Dashboard ที่แชร์: ดูได้ แก้ได้เฉพาะเจ้าของ/แอดมิน'); });
+document.addEventListener('click', function (e) {
+    if (e.target.classList && e.target.classList.contains('preset')) {
+        each(e.target.parentNode.querySelectorAll('.preset'), function (x) { x.classList.toggle('on', x === e.target); });
+    }
+});
+function login() { $('loginPage').classList.add('hide'); $('appShell').classList.remove('hide'); if (!location.hash) location.hash = 'dashboard'; renderNav(); }
+function logout() { $('appShell').classList.add('hide'); $('loginPage').classList.remove('hide'); }
+window.addEventListener('hashchange', route);
+</script>
+</body>
+</html>

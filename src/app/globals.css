@@ -1,0 +1,168 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sarabun), Tahoma, sans-serif;
+  --font-mono: ui-monospace, Consolas, "Courier New", monospace;
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-muted: var(--sidebar-muted);
+  --color-table-head: var(--table-head);
+  --color-table-head-foreground: var(--table-head-foreground);
+  --color-grid: var(--grid);
+  --color-logo: var(--logo);
+  --shadow-card: var(--card-shadow);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+/* โทนสีตาม mockup.html (v2): พื้นฟ้าอ่อน, การ์ดขาว, เมนูข้างสีกรมท่า */
+:root {
+  --radius: 0.625rem;
+  --background: #f3f6fa;
+  --foreground: #1c2633;
+  --card: #ffffff;
+  --card-foreground: #1c2633;
+  --popover: #ffffff;
+  --popover-foreground: #1c2633;
+  --secondary: #eef2f7;
+  --secondary-foreground: #1c2633;
+  --muted: #eef2f7;
+  --muted-foreground: #627083;
+  --accent: #eaf1fa;
+  --accent-foreground: #1c2633;
+  --destructive: #c0392b;
+  --border: #dfe5ee;
+  --input: #dfe5ee;
+  --sidebar: #12324f;
+  --sidebar-foreground: #c9d6e4;
+  --sidebar-muted: #7f97b0;
+  --sidebar-accent: rgb(255 255 255 / 7%);
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: rgb(255 255 255 / 8%);
+  --table-head: #f5f8fc;
+  --table-head-foreground: #3a4a5e;
+  --grid: #c9d3e0;
+  --logo: #0f8b8d;
+  --card-shadow: 0 1px 3px rgb(20 40 70 / 8%);
+  --login-bg: linear-gradient(135deg, #12324f, #1b64b5 60%, #0f8b8d);
+}
+
+.dark {
+  --background: #0f1722;
+  --foreground: #e3eaf3;
+  --card: #16212f;
+  --card-foreground: #e3eaf3;
+  --popover: #16212f;
+  --popover-foreground: #e3eaf3;
+  --secondary: #1d2a3a;
+  --secondary-foreground: #e3eaf3;
+  --muted: #1d2a3a;
+  --muted-foreground: #8fa0b5;
+  --accent: #1f2f43;
+  --accent-foreground: #e3eaf3;
+  --destructive: #e5675a;
+  --border: #26364a;
+  --input: #2c3e54;
+  --sidebar: #0b1825;
+  --sidebar-foreground: #b7c6d6;
+  --sidebar-muted: #6f86a0;
+  --sidebar-accent: rgb(255 255 255 / 6%);
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: rgb(255 255 255 / 6%);
+  --table-head: #1b2838;
+  --table-head-foreground: #b7c6d6;
+  --grid: #34475e;
+  --logo: #13a3a5;
+  --card-shadow: 0 1px 3px rgb(0 0 0 / 30%);
+  --login-bg: linear-gradient(135deg, #07121d, #123f73 60%, #0a5f61);
+}
+
+/* ---------- สีสถานะ (ใช้ร่วมทุกชุดสี) ---------- */
+:root {
+  --success: oklch(0.6 0.15 150);
+  --warning: oklch(0.72 0.16 70);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+}
+.dark {
+  --success: oklch(0.72 0.17 150);
+  --warning: oklch(0.8 0.15 75);
+  --chart-2: oklch(0.704 0.14 182.503);
+  --chart-3: oklch(0.828 0.189 84.429);
+  --chart-4: oklch(0.714 0.203 305.504);
+  --chart-5: oklch(0.712 0.194 13.428);
+}
+
+/* ---------- ชุดสีหลัก: <html data-color="..."> ----------
+   เปลี่ยนสีทั้งระบบด้วยตัวแปร --brand แล้วส่งต่อให้ primary / ring / sidebar / chart-1 */
+:root { --brand: #1b64b5; --brand-foreground: oklch(0.985 0 0); }
+.dark { --brand: #3f87d6; }
+[data-color="teal"]   { --brand: #0f8b8d; }
+.dark[data-color="teal"]   { --brand: #17a5a7; }
+[data-color="green"]  { --brand: oklch(0.627 0.194 149.214); }
+.dark[data-color="green"]  { --brand: oklch(0.723 0.219 149.579); }
+[data-color="violet"] { --brand: oklch(0.541 0.281 293.009); }
+.dark[data-color="violet"] { --brand: oklch(0.606 0.25 292.717); }
+[data-color="orange"] { --brand: oklch(0.646 0.222 41.116); }
+.dark[data-color="orange"] { --brand: oklch(0.705 0.213 47.604); }
+[data-color="rose"]   { --brand: oklch(0.586 0.253 17.585); }
+.dark[data-color="rose"]   { --brand: oklch(0.645 0.246 16.439); }
+
+:root, .dark {
+  --primary: var(--brand);
+  --primary-foreground: var(--brand-foreground);
+  --ring: var(--brand);
+  --chart-1: var(--brand);
+  --sidebar-primary: var(--brand);
+  --sidebar-primary-foreground: var(--brand-foreground);
+  --sidebar-ring: var(--brand);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-size: 15px;
+  }
+}
