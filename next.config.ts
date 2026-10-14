@@ -8,6 +8,10 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ["mysql2", "exceljs", "bcryptjs"],
   // Docker ใช้ server.js แบบ standalone (ตั้งใน Dockerfile) — npm start แบบเดิมไม่กระทบ
   output: process.env.NEXT_OUTPUT === "standalone" ? "standalone" : undefined,
+  // เปิด http://<เครื่อง>:3000/ เฉย ๆ → พาไปหน้าระบบ (ไม่งั้นได้ 404 เพราะทุกหน้าอยู่ใต้ basePath)
+  async redirects() {
+    return [{ source: "/", destination: BASE_PATH, basePath: false, permanent: false }];
+  },
 };
 
 export default nextConfig;
