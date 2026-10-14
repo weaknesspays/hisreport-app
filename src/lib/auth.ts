@@ -103,12 +103,16 @@ async function isLocked(username: string, ip: string | null) {
   return Number(r?.by_user ?? 0) >= MAX_FAIL_USER || Number(r?.by_ip ?? 0) >= MAX_FAIL_IP;
 }
 
+/** Role ที่ให้ผู้ใช้ HIS อัตโนมัติตอน login ครั้งแรก (ไม่มี Role ชื่อนี้ → ข้าม) */
+const DEFAULT_HIS_ROLE = "เจ้าหน้าที่";
+
 /**
  * ตรวจชื่อผู้ใช้/รหัสผ่าน
  * - บัญชี local : ตรวจกับ password_hash (bcrypt) ในฐานของระบบ
  * - บัญชี HIS   : ตรวจกับ hi.dct ด้วย CRC-16/CCITT-FALSE (ดู CRC.md) — login ครั้งแรกสร้างผู้ใช้ให้อัตโนมัติ
- *                 แต่ยังไม่มี Role จึงไม่เห็นรายงานใดจนกว่าผู้ดูแลจะกำหนดสิทธิ์
+ *                 พร้อม Role เริ่มต้น DEFAULT_HIS_ROLE (ผู้ดูแลเปลี่ยน/ถอดออกได้ภายหลัง)
  */
+
 export async function authenticate(username: string, password: string, ip: string | null = null): Promise<{ ok: true; id: number } | { ok: false; error: string; unavailable?: boolean }> {
   if (await isLocked(username, ip)) {
     return { ok: false, error: `ใส่รหัสผ่านผิดหลายครั้ง กรุณารอ ${LOCK_MINUTES} นาทีแล้วลองใหม่` };
@@ -143,5 +147,7 @@ export async function authenticate(username: string, password: string, ip: strin
   const created = await exec(
     "INSERT INTO app_user (username, display_name, auth_source, is_active) VALUES (?,?,'his',1)", [his.username, his.displayName]);
   await exec("INSERT IGNORE INTO user_setting (user_id) VALUES (?)", [created.insertId]);
+  await exec("INSERT IGNORE INTO user_role (user_id, role_id) SELECT ?, id FROM role WHERE name = ?",
+    [created.insertId, DEFAULT_HIS_ROLE]);
   return { ok: true, id: created.insertId };
 }
