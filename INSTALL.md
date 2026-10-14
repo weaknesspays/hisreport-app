@@ -91,6 +91,12 @@ docker compose ps            # รอจน app เป็น "healthy" (~1–2 �
 - **build ครั้งแรก**: ใช้เวลา 5–15 นาที และต้องต่ออินเทอร์เน็ต
 - **ทุกครั้งที่ container เริ่ม**: ระบบสร้างตารางที่ยังไม่มีและบัญชีผู้ดูแลให้อัตโนมัติ
 
+**ฐาน hisreport_app อยู่เซิร์ฟเวอร์อื่น** (ไม่ใช้ MySQL ใน container)
+1. ตั้ง `APP_DB_HOST=<IP>` ใน `.env.docker`
+2. รัน `docker compose -f docker-compose.external-db.yml up -d --build`
+
+ขั้นตอนฝั่งเซิร์ฟเวอร์ฐานข้อมูลดูข้อ 4.1 ใน [DOCKER.md](DOCKER.md)
+
 ไปต่อที่ **ข้อ 4 ใช้งานครั้งแรก**
 รายละเอียดเพิ่มเติม (ย้ายข้อมูลเดิม สำรองข้อมูล แก้ปัญหา) ดูใน [DOCKER.md](DOCKER.md)
 
@@ -161,7 +167,7 @@ New-NetFirewallRule -DisplayName "HIS Report 3000" -Direction Inbound -Protocol 
 
 | ค่า | ความหมาย | ตัวอย่าง |
 |---|---|---|
-| `APP_DB_HOST` / `APP_DB_PORT` | ฐานของระบบ (Docker ตั้งให้เอง) | `127.0.0.1` / `3306` |
+| `APP_DB_HOST` / `APP_DB_PORT` | **ที่อยู่ฐานของระบบ (hisreport_app)**: Windows ใช้ `127.0.0.1`, Docker ใช้ `db`, ฐานอยู่เครื่องอื่นใส่ IP ของเครื่องนั้น | `127.0.0.1` / `3306` |
 | `APP_DB_USER` / `APP_DB_PASSWORD` / `APP_DB_NAME` | ผู้ใช้และฐานของระบบ | `hisreport` / … / `hisreport_app` |
 | `MYSQL_PASSWORD` / `MYSQL_ROOT_PASSWORD` | **Docker เท่านั้น**: รหัสของ MySQL ใน container | |
 | `HIS_DB_HOST` / `HIS_DB_PORT` | เซิร์ฟเวอร์ HIS | `10.0.0.8` / `3306` |

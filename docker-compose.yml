@@ -1,5 +1,6 @@
 # ระบบรายงาน HIS — app + ฐานข้อมูลของระบบ (MySQL 8)
 # ใช้: copy .env.docker.example .env.docker → แก้ค่า → docker compose up -d --build
+# ถ้าฐาน hisreport_app อยู่เซิร์ฟเวอร์อื่น ใช้ docker-compose.external-db.yml แทน
 # เปิด: http://<เครื่อง>:3000/hisreport-app
 #
 # ฐาน HIS (10.0.0.8) อยู่นอก Docker — container ออกไปหาได้ผ่านเครือข่ายของเครื่อง host
@@ -10,11 +11,8 @@ services:
     image: hisreport-app:latest
     container_name: hisreport-app
     restart: unless-stopped
-    env_file: .env.docker
+    env_file: .env.docker      # APP_DB_HOST=db (container ด้านล่าง)
     environment:
-      # ต่อฐานของระบบใน container "db" เสมอ (ทับค่าใน .env.docker)
-      APP_DB_HOST: db
-      APP_DB_PORT: "3306"
       TZ: Asia/Bangkok
     ports:
       - "3000:3000"

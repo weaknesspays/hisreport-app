@@ -1,0 +1,20 @@
+# ระบบรายงาน HIS — เฉพาะ app (ฐาน hisreport_app อยู่เซิร์ฟเวอร์อื่น ไม่สร้าง MySQL ในเครื่องนี้)
+# ใช้:
+#   1. ใน .env.docker ตั้ง APP_DB_HOST=<IP เซิร์ฟเวอร์ฐานข้อมูล> และ APP_DB_PORT
+#   2. docker compose -f docker-compose.external-db.yml up -d --build
+# ฐานปลายทางต้องเป็น MySQL 8 และมีผู้ใช้ที่อนุญาตให้ต่อจาก IP ของเครื่องนี้ (ดู DOCKER.md)
+
+services:
+  app:
+    build: .
+    image: hisreport-app:latest
+    container_name: hisreport-app
+    restart: unless-stopped
+    env_file: .env.docker
+    environment:
+      TZ: Asia/Bangkok
+    ports:
+      - "3000:3000"
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "5" }

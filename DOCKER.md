@@ -56,6 +56,33 @@ docker compose logs -f app             # ดู log (Ctrl+C ออก)
 - **ทุกครั้งที่ container เริ่ม**: ระบบรัน `scripts/migrate.mjs` ให้อัตโนมัติ สร้างตารางที่ยังไม่มี โดยไม่ลบข้อมูลเดิม
 - **เปิดเองหลังรีสตาร์ทเครื่อง**: ตั้ง `restart: unless-stopped` ไว้แล้ว (Docker Desktop ต้องตั้ง "Start when you sign in")
 
+## 4.1 ถ้าฐาน hisreport_app อยู่เซิร์ฟเวอร์อื่น
+ใช้ MySQL 8 ที่มีอยู่แล้วบนเซิร์ฟเวอร์อื่น แทน container `db`
+
+**ฝั่งเซิร์ฟเวอร์ฐานข้อมูล** (ทำครั้งเดียว ด้วยผู้ใช้ root ของ MySQL นั้น) แทน `<IP เครื่อง Docker>` ด้วย IP ของเครื่องที่รัน Docker
+```sql
+CREATE DATABASE IF NOT EXISTS hisreport_app CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'hisreport'@'<IP เครื่อง Docker>' IDENTIFIED BY '<รหัสผ่าน>';
+GRANT ALL PRIVILEGES ON hisreport_app.* TO 'hisreport'@'<IP เครื่อง Docker>';
+FLUSH PRIVILEGES;
+```
+- MySQL ต้องรับการเชื่อมต่อจากเครื่องอื่น: `bind-address` ใน my.ini / my.cnf ต้องไม่ใช่ `127.0.0.1`
+- เปิด firewall port 3306 ให้เฉพาะ IP เครื่อง Docker
+- ตั้งเวลาเซิร์ฟเวอร์เป็นเวลาไทย (หรือ `default-time-zone='+07:00'`) เพราะระบบใช้ `NOW()` คิดเวลาหมดอายุของ cache
+
+**ฝั่งเครื่อง Docker**: ใน `.env.docker` แก้
+```
+APP_DB_HOST=<IP เซิร์ฟเวอร์ฐานข้อมูล>
+APP_DB_PORT=3306
+APP_DB_USER=hisreport
+APP_DB_PASSWORD=<รหัสผ่านข้างบน>
+```
+(`MYSQL_PASSWORD` / `MYSQL_ROOT_PASSWORD` ไม่ใช้ในกรณีนี้) แล้วเปิดระบบด้วยไฟล์ที่ไม่มี container db
+```powershell
+docker compose -f docker-compose.external-db.yml up -d --build
+```
+ตารางจะถูกสร้างให้อัตโนมัติตอน app เริ่ม คำสั่งอื่นในข้อ 5 ให้เติม `-f docker-compose.external-db.yml` ด้วย และสำรองข้อมูลทำบนเซิร์ฟเวอร์ฐานข้อมูลด้วย `mysqldump` ตามปกติ
+
 ## 5. งานประจำ
 | งาน | คำสั่ง |
 |---|---|
