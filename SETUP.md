@@ -1,5 +1,7 @@
 # ติดตั้งระบบรายงาน HIS (hisreport-app)
 
+> บันทึกการติดตั้งบนเครื่องพัฒนา (AppServ) — **คู่มือติดตั้งสำหรับหน่วยงานที่นำไปใช้ ดู [INSTALL.md](INSTALL.md)**
+
 ## 1. สร้างฐานข้อมูลของระบบ (ครั้งเดียว)
 1. เปิด `db/00_create_db_and_user.sql` เปลี่ยน `CHANGE_ME` เป็นรหัสผ่านที่ต้องการ
 2. รันด้วยผู้ใช้ root ของ MySQL บนเครื่องนี้ (phpMyAdmin หรือ `mysql -u root -p < db\00_create_db_and_user.sql`)
