@@ -230,3 +230,11 @@ CREATE TABLE IF NOT EXISTS audit_log (
     KEY idx_created (created_at),
     KEY idx_user (user_id, created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ค่าตั้งระบบที่ผู้ดูแลปรับได้จากหน้าเว็บ (key/value)
+CREATE TABLE IF NOT EXISTS app_setting (
+    name        VARCHAR(50) PRIMARY KEY,
+    value       VARCHAR(500) NOT NULL,
+    updated_by  INT UNSIGNED NULL,
+    updated_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

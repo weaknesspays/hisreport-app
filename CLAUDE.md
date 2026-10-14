@@ -44,7 +44,7 @@ Next.js 15 (App Router, `basePath: /hisreport-app`) + TypeScript, Tailwind v4 + 
 - `src/lib/his-auth.ts`: `hi.dct` — `dct` = ชื่อผู้ใช้ (เทียบตรงตัวพิมพ์), `statusdct='1'` = ระงับ, รหัสผ่าน → CRC-16/CCITT-FALSE ฐานสิบ เทียบ `TRIM(psswrd)` (ลอง UTF-8 และ TIS-620 ถ้ามีอักขระไทย)
 - ห้ามส่ง/แสดง/log ค่า `psswrd` เด็ดขาด — `searchHisUsers()` ไม่ดึงคอลัมน์นี้
 - `authenticate()`: บัญชี local ใช้ bcrypt, นอกนั้นตรวจกับ HIS; login HIS ครั้งแรกสร้าง `app_user` อัตโนมัติพร้อม Role "เจ้าหน้าที่" (`DEFAULT_HIS_ROLE`)
-- จำกัด login ผิด: 5 ครั้ง/ชื่อผู้ใช้ หรือ 20 ครั้ง/IP ใน 15 นาที (นับจาก `audit_log` action `login_fail`)
+- จำกัด login ผิด: 5 ครั้ง/ชื่อผู้ใช้ หรือ 20 ครั้ง/IP ใน 15 นาที (นับจาก `audit_log` action `login_fail`) — ผู้ดูแลเปิด/ปิดได้ที่ ผู้ใช้และสิทธิ์ → แท็บความปลอดภัย (`app_setting.login_lockout`, ค่าเริ่มต้นเปิด, `src/lib/settings.ts`)
 - `hi.dct.dct` เป็น `tis620_bin` (แยกตัวพิมพ์: มีทั้ง `G7` และ `g7`) → `app_user.username` ต้องเป็น `utf8mb4_bin`
 - ทดสอบกับ HIS จริงแล้ว (2026-10-12): ไม่พบผู้ใช้ / รหัสผิด / ถูกระงับ ทำงานถูก — ยังไม่ได้ลอง login สำเร็จด้วยบัญชีจริง (ต้องให้ผู้ใช้ลองเอง)
 

@@ -1,6 +1,7 @@
 import { requireAdmin } from "@/lib/auth";
 import { rows } from "@/lib/db";
 import { allGroups } from "@/lib/reports";
+import { getFlag } from "@/lib/settings";
 import { UsersManager } from "@/components/admin/users-manager";
 
 export const metadata = { title: "ผู้ใช้และสิทธิ์" };
@@ -13,10 +14,12 @@ export default async function UsersPage() {
     "SELECT id, username, display_name, department, auth_source, is_active, last_login FROM app_user ORDER BY is_active DESC, username");
   const ur = await rows<{ user_id: number; role_id: number }>("SELECT user_id, role_id FROM user_role");
   const groups = await allGroups();
+  const loginLockout = await getFlag("login_lockout");
 
   return (
     <UsersManager
       meId={me.id}
+      loginLockout={loginLockout}
       groups={groups.map((g) => ({ id: g.id, name: g.name, category: g.category }))}
       roles={roles.map((r) => ({
         id: r.id, name: r.name, can_export: !!r.can_export, can_view_person: !!r.can_view_person, can_author: !!r.can_author, is_admin: !!r.is_admin,

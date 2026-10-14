@@ -6,7 +6,7 @@ export type AuditAction =
   | "login" | "login_fail" | "logout"
   | "view" | "view_person" | "export"
   | "edit_report" | "publish_report" | "import_legacy"
-  | "edit_permission" | "edit_user" | "edit_group"
+  | "edit_permission" | "edit_user" | "edit_group" | "edit_setting"
   | "save_result" | "view_saved" | "export_saved" | "delete_saved"
   | "denied";
 

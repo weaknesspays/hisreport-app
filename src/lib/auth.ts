@@ -7,6 +7,7 @@ import { SESSION_COOKIE, isThemeColor, isThemeMode, type ThemeColor, type ThemeM
 import { verifySession } from "./session";
 import { exec, one, rows } from "./db";
 import { hisAuthenticate } from "./his-auth";
+import { getFlag } from "./settings";
 
 export type CurrentUser = {
   id: number;
@@ -91,8 +92,10 @@ const LOCK_MINUTES = 15;
 const MAX_FAIL_USER = 5;
 const MAX_FAIL_IP = 20;
 
-/** จำกัดจำนวนครั้ง login ผิด (CRC-16 ของ HIS สุ่มรหัสได้ง่าย — CRC.md ข้อ 8) นับจาก audit_log */
+/** จำกัดจำนวนครั้ง login ผิด (CRC-16 ของ HIS สุ่มรหัสได้ง่าย — CRC.md ข้อ 8) นับจาก audit_log
+ *  ผู้ดูแลปิดได้ที่หน้าผู้ใช้และสิทธิ์ (app_setting.login_lockout) — ยังบันทึก login_fail ตามปกติ */
 async function isLocked(username: string, ip: string | null) {
+  if (!(await getFlag("login_lockout"))) return false;
   const r = await one<{ by_user: number; by_ip: number }>(
     `SELECT
        SUM(BINARY detail = ?) AS by_user,

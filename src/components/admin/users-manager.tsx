@@ -73,7 +73,41 @@ function HisUserSearch({ onPick }: { onPick: (u: HisUser) => void }) {
   );
 }
 
-export function UsersManager({ meId, groups, roles: initRoles, users }: { meId: number; groups: { id: number; name: string; category: string | null }[]; roles: Role[]; users: User[] }) {
+/** เปิด/ปิดการจำกัด login ผิด — บันทึกทันทีที่สลับ */
+function LoginLockoutCard({ initial }: { initial: boolean }) {
+  const [on, setOn] = useState(initial);
+  const [busy, setBusy] = useState(false);
+
+  async function toggle(v: boolean) {
+    setBusy(true);
+    const res = await fetch(api("/admin/settings"), { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ login_lockout: v }) }).catch(() => null);
+    setBusy(false);
+    if (!res?.ok) { toast.error((await res?.json().catch(() => null))?.error || "บันทึกไม่สำเร็จ"); return; }
+    setOn(v);
+    toast.success(v ? "เปิดการจำกัด login ผิดแล้ว" : "ปิดการจำกัด login ผิดแล้ว");
+  }
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row flex-wrap items-start gap-3 space-y-0">
+        <div className="min-w-0 flex-1 space-y-1.5">
+          <CardTitle className="text-base">จำกัดการใส่รหัสผ่านผิด</CardTitle>
+          <CardDescription>
+            ระงับการ login ชั่วคราว 15 นาที เมื่อใส่รหัสผิด 5 ครั้งต่อชื่อผู้ใช้ หรือ 20 ครั้งต่อ IP
+            · ปิดแล้วระบบยังบันทึกการ login ผิดในประวัติการใช้งานตามปกติ
+          </CardDescription>
+          {!on && <p className="text-sm text-warning">ปิดอยู่ — รหัสผ่านบัญชี HIS เดาได้ง่าย ควรเปิดไว้เสมอ ยกเว้นช่วงแก้ปัญหาผู้ใช้ถูกล็อก</p>}
+        </div>
+        <label className="flex items-center gap-2 text-sm">
+          {busy && <Loader2 className="size-4 animate-spin" />}
+          <Switch checked={on} disabled={busy} onCheckedChange={toggle} /> {on ? "เปิด" : "ปิด"}
+        </label>
+      </CardHeader>
+    </Card>
+  );
+}
+
+export function UsersManager({ meId, loginLockout, groups, roles: initRoles, users }: { meId: number; loginLockout: boolean; groups: { id: number; name: string; category: string | null }[]; roles: Role[]; users: User[] }) {
   const router = useRouter();
   const [roles, setRoles] = useState(initRoles);
   const [saving, setSaving] = useState(false);
@@ -116,7 +150,7 @@ export function UsersManager({ meId, groups, roles: initRoles, users }: { meId: 
     <div className="space-y-4">
       <h1 className="text-xl font-semibold sm:text-2xl">ผู้ใช้และสิทธิ์</h1>
       <Tabs defaultValue="roles">
-        <TabsList><TabsTrigger value="roles">กลุ่มสิทธิ์ (Role)</TabsTrigger><TabsTrigger value="users">ผู้ใช้ ({users.length})</TabsTrigger></TabsList>
+        <TabsList><TabsTrigger value="roles">กลุ่มสิทธิ์ (Role)</TabsTrigger><TabsTrigger value="users">ผู้ใช้ ({users.length})</TabsTrigger><TabsTrigger value="security">ความปลอดภัย</TabsTrigger></TabsList>
 
         <TabsContent value="roles" className="space-y-4">
           <Card>
@@ -189,6 +223,10 @@ export function UsersManager({ meId, groups, roles: initRoles, users }: { meId: 
               </TableBody>
             </Table>
           </div></Card>
+        </TabsContent>
+
+        <TabsContent value="security" className="space-y-4">
+          <LoginLockoutCard initial={loginLockout} />
         </TabsContent>
       </Tabs>
 
