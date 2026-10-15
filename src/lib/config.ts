@@ -13,10 +13,10 @@ export const SESSION_HOURS = 8;
 export const THEME_COLORS = [
   { id: "blue", label: "น้ำเงิน", swatch: "#1b64b5" },
   { id: "teal", label: "เขียวน้ำทะเล", swatch: "#0f8b8d" },
-  { id: "green", label: "เขียว", swatch: "oklch(0.627 0.194 149.214)" },
-  { id: "violet", label: "ม่วง", swatch: "oklch(0.541 0.281 293.009)" },
-  { id: "orange", label: "ส้ม", swatch: "oklch(0.646 0.222 41.116)" },
-  { id: "rose", label: "ชมพูแดง", swatch: "oklch(0.586 0.253 17.585)" },
+  { id: "green", label: "เขียว", swatch: "#00a63e" },
+  { id: "violet", label: "ม่วง", swatch: "#7f22fe" },
+  { id: "orange", label: "ส้ม", swatch: "#f54900" },
+  { id: "rose", label: "ชมพูแดง", swatch: "#ec003f" },
 ] as const;
 
 export type ThemeColor = (typeof THEME_COLORS)[number]["id"];

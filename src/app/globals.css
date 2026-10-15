@@ -116,36 +116,36 @@
 
 /* ---------- สีสถานะ (ใช้ร่วมทุกชุดสี) ---------- */
 :root {
-  --success: oklch(0.6 0.15 150);
-  --warning: oklch(0.72 0.16 70);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
+  --success: #25984d;
+  --warning: #e38f00;
+  --chart-2: #009689;
+  --chart-3: #fe9a00;
+  --chart-4: #ad46ff;
+  --chart-5: #ff2056;
 }
 .dark {
-  --success: oklch(0.72 0.17 150);
-  --warning: oklch(0.8 0.15 75);
-  --chart-2: oklch(0.704 0.14 182.503);
-  --chart-3: oklch(0.828 0.189 84.429);
-  --chart-4: oklch(0.714 0.203 305.504);
-  --chart-5: oklch(0.712 0.194 13.428);
+  --success: #3fc168;
+  --warning: #f5ae39;
+  --chart-2: #00bba7;
+  --chart-3: #ffb900;
+  --chart-4: #c27aff;
+  --chart-5: #ff637e;
 }
 
 /* ---------- ชุดสีหลัก: <html data-color="..."> ----------
    เปลี่ยนสีทั้งระบบด้วยตัวแปร --brand แล้วส่งต่อให้ primary / ring / sidebar / chart-1 */
-:root { --brand: #1b64b5; --brand-foreground: oklch(0.985 0 0); }
+:root { --brand: #1b64b5; --brand-foreground: #fafafa; }
 .dark { --brand: #3f87d6; }
 [data-color="teal"]   { --brand: #0f8b8d; }
 .dark[data-color="teal"]   { --brand: #17a5a7; }
-[data-color="green"]  { --brand: oklch(0.627 0.194 149.214); }
-.dark[data-color="green"]  { --brand: oklch(0.723 0.219 149.579); }
-[data-color="violet"] { --brand: oklch(0.541 0.281 293.009); }
-.dark[data-color="violet"] { --brand: oklch(0.606 0.25 292.717); }
-[data-color="orange"] { --brand: oklch(0.646 0.222 41.116); }
-.dark[data-color="orange"] { --brand: oklch(0.705 0.213 47.604); }
-[data-color="rose"]   { --brand: oklch(0.586 0.253 17.585); }
-.dark[data-color="rose"]   { --brand: oklch(0.645 0.246 16.439); }
+[data-color="green"]  { --brand: #00a63e; }
+.dark[data-color="green"]  { --brand: #00c950; }
+[data-color="violet"] { --brand: #7f22fe; }
+.dark[data-color="violet"] { --brand: #8e51ff; }
+[data-color="orange"] { --brand: #f54900; }
+.dark[data-color="orange"] { --brand: #ff6900; }
+[data-color="rose"]   { --brand: #ec003f; }
+.dark[data-color="rose"]   { --brand: #ff2056; }
 
 :root, .dark {
   --primary: var(--brand);
