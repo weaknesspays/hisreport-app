@@ -27,7 +27,7 @@ export const DisplaySchema = z.object({
   views: z.array(View).min(1),
   defaultView: View.optional(),
   number: z.object({ column: z.string().optional(), agg: z.enum(["sum", "count", "first"]).optional(), subColumn: z.string().optional(), subLabel: z.string().optional() }).optional(),
-  chart: z.object({ type: z.enum(["bar", "barh", "line"]).optional(), x: z.string().optional(), y: z.array(z.string()).optional(), limit: z.number().int().min(1).max(500).optional() }).optional(),
+  chart: z.object({ type: z.enum(["bar", "barh", "line"]).optional(), x: z.string().optional(), y: z.array(z.string()).optional(), y2: z.string().optional(), labels: z.boolean().optional(), limit: z.number().int().min(1).max(500).optional() }).optional(),
   table: z.object({ pageSize: z.number().int().min(5).max(500).optional(), totalRow: z.boolean().optional() }).optional(),
   dashboard: z.boolean().optional(),
 });

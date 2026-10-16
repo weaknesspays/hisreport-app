@@ -19,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ParamForm } from "@/components/report/param-form";
 import { ResultChart, ResultNumber, ResultTable } from "@/components/report/result-views";
+import { ChartGuide, type ChartExample } from "@/components/admin/chart-guide";
 import { api } from "@/lib/config";
 import { defaultValues } from "@/lib/param-defaults";
 import { thaiDate } from "@/lib/dates";
@@ -94,6 +95,18 @@ export function ReportEditor({ initial, groups, isAdmin }: { initial: EditorInit
 
   function setParam(i: number, patch: Partial<ParamDef>) {
     setParams(params.map((p, j) => (j === i ? { ...p, ...patch } : p)));
+  }
+
+  /** คู่มือกราฟ: แทนที่ SQL + ตัวแปร และตั้งกราฟตามตัวอย่าง (ยังไม่บันทึก) */
+  function applyChartExample(ex: ChartExample) {
+    if (sql.trim() && !window.confirm("แทนที่ SQL และตัวแปรเดิมด้วยตัวอย่างนี้?")) return;
+    setSql(ex.sql);
+    setParams(ex.params);
+    setTestValues(defaultValues(ex.params));
+    setTest(null);
+    const views = display.views.includes("chart") ? display.views : [...display.views, "chart" as ViewType];
+    setDisplay({ ...display, views, defaultView: "chart", chart: ex.chart });
+    toast.success("ใส่ตัวอย่างแล้ว — กด “ทดสอบ” เพื่อดูกราฟ แล้วบันทึก");
   }
 
   function pullParams() {
@@ -247,6 +260,7 @@ export function ReportEditor({ initial, groups, isAdmin }: { initial: EditorInit
                 className="min-h-80 bg-slate-950 font-mono text-[13px] leading-relaxed text-slate-100 dark:bg-slate-950" />
             </CardContent>
           </Card>
+          <ChartGuide onUse={applyChartExample} onGoDisplay={() => setTab("display")} />
           <Card>
             <CardHeader className="flex flex-row flex-wrap items-center gap-2 space-y-0">
               <CardTitle className="text-base">ตัวแปรเงื่อนไข</CardTitle>
@@ -441,6 +455,18 @@ export function ReportEditor({ initial, groups, isAdmin }: { initial: EditorInit
                       </label>
                     ))}
                   </div>
+                </Field>
+                <Field label="แกนขวา (หน่วยต่างกัน เช่น บาท)">
+                  <Select value={display.chart?.y2 ?? "__none"} onValueChange={(v) => setDisplay({ ...display, chart: { ...display.chart, y2: v === "__none" ? undefined : v } })}>
+                    <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                    <SelectContent><SelectItem value="__none">ไม่ใช้</SelectItem>{(numericCols.length ? numericCols : knownCols.map((c) => c.name)).map((n) => <SelectItem key={n} value={n}>{n}</SelectItem>)}</SelectContent>
+                  </Select>
+                </Field>
+                <Field label="ตัวเลขบนแท่ง/จุด">
+                  <Select value={display.chart?.labels === undefined ? "__auto" : display.chart.labels ? "on" : "off"} onValueChange={(v) => setDisplay({ ...display, chart: { ...display.chart, labels: v === "__auto" ? undefined : v === "on" } })}>
+                    <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                    <SelectContent><SelectItem value="__auto">อัตโนมัติ (แสดงเมื่อไม่แน่นเกินไป)</SelectItem><SelectItem value="on">แสดงเสมอ</SelectItem><SelectItem value="off">ไม่แสดง</SelectItem></SelectContent>
+                  </Select>
                 </Field>
                 <Field label="แสดงสูงสุด (แถว)"><Input type="number" value={display.chart?.limit ?? 20} onChange={(e) => setDisplay({ ...display, chart: { ...display.chart, limit: Number(e.target.value) || 20 } })} /></Field>
               </CardContent>

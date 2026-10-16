@@ -153,55 +153,75 @@ export function ResultNumber({ result, columns, display }: { result: RunResult; 
   );
 }
 
-type Series = { key: string; label: string };
+type Series = { key: string; label: string; right?: boolean };
 type ChartType = "bar" | "barh" | "line";
 
 const fmtVal = (v: number) => fmtNumber(v, Number.isInteger(v) ? 0 : 2);
+/** ตัวเลขบนแท่งแบบย่อเมื่อแน่น (12,345 → 12.3K) */
+const short1 = (v: number) => String(Math.round(v * 10) / 10);
+const fmtShort = (v: number) => (Math.abs(v) >= 1e6 ? `${short1(v / 1e6)}M` : Math.abs(v) >= 1e4 ? `${short1(v / 1e3)}K` : fmtVal(v));
 
-function ChartBody({ data, series, type, height }: { data: Record<string, unknown>[]; series: Series[]; type: ChartType; height: number }) {
+/**
+ * labels: true/false = ผู้ดูแลกำหนด, undefined = อัตโนมัติ (แสดงเมื่อจุดข้อมูลรวมไม่แน่นเกินไป)
+ * series ที่ right = true วาดบนแกนขวา (ใช้กับแท่งแนวตั้ง / เส้น) — แท่งแนวนอนใช้แกนเดียว
+ */
+function ChartBody({ data, series, type, height, labels: showLabels }: { data: Record<string, unknown>[]; series: Series[]; type: ChartType; height: number; labels?: boolean }) {
   const tick = { fill: "var(--muted-foreground)", fontSize: 12 };
-  const labels = series.length === 1 && data.length <= 25; // ค่ากำกับบนแท่ง เมื่อมีชุดเดียวและไม่แน่นเกินไป
-  const common = (
-    <>
-      <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-      <Tooltip contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--popover-foreground)" }} formatter={(v: number) => fmtVal(v)} />
-      {series.length > 1 && <Legend />}
-    </>
-  );
+  const points = data.length * series.length;
+  const labels = showLabels ?? points <= 40;
+  const dense = points > 16;
+  const labelFmt = (v: unknown) => (typeof v === "number" ? (dense ? fmtShort(v) : fmtVal(v)) : String(v ?? ""));
+  const labelSize = dense ? 10 : 12;
+  const dual = type !== "barh" && series.some((s) => s.right) && series.some((s) => !s.right);
+  const axisOf = (s: Series) => (dual && s.right ? "right" : "left");
+  // recharts หา Grid/Axis/Legend จากลูกโดยตรง — ห้ามห่อด้วย Fragment (ไม่งั้นไม่แสดง) จึงใช้ array
+  const common = [
+    <CartesianGrid key="grid" strokeDasharray="3 3" stroke="var(--border)" />,
+    <Tooltip key="tip" contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--popover-foreground)" }} formatter={(v: number) => fmtVal(v)} />,
+    series.length > 1 ? <Legend key="legend" /> : null,
+  ];
+  const yAxes = [
+      <YAxis key="left" yAxisId="left" tick={tick} tickFormatter={(v) => fmtNumber(v)} allowDecimals={false}
+        label={dual ? { value: series.filter((s) => !s.right).map((s) => s.label).join(", "), angle: -90, position: "insideLeft", fill: "var(--muted-foreground)", fontSize: 12 } : undefined} />,
+      dual ? (
+        <YAxis key="right" yAxisId="right" orientation="right" tick={tick} tickFormatter={(v) => fmtShort(v)} allowDecimals={false}
+          label={{ value: series.filter((s) => s.right).map((s) => s.label).join(", "), angle: 90, position: "insideRight", fill: "var(--muted-foreground)", fontSize: 12 }} />
+      ) : null,
+  ];
   const longest = Math.max(...data.map((d) => String(d.__x).length));
   return (
-    <div style={{ height: type === "barh" ? Math.max(height, data.length * 32 + 40) : height }} className="w-full">
+    <div style={{ height: type === "barh" ? Math.max(height, data.length * 32 * Math.max(1, series.length * 0.7) + 40) : height }} className="w-full">
       <ResponsiveContainer>
         {type === "line" ? (
-          <LineChart data={data} margin={{ left: 8, right: 24, top: 16 }}>
+          <LineChart data={data} margin={{ left: 8, right: dual ? 8 : 24, top: 20 }}>
             {common}
             <XAxis dataKey="__x" tick={tick} />
-            <YAxis tick={tick} tickFormatter={(v) => fmtNumber(v)} allowDecimals={false} />
+            {yAxes}
             {series.map((s, i) => (
-              <Line key={s.key} dataKey={s.key} name={s.label} stroke={CHART_COLORS[i % 5]} strokeWidth={2.5} dot={{ r: 3 }}>
-                {labels && <LabelList dataKey={s.key} position="top" formatter={fmtVal} fontSize={12} fill="var(--foreground)" />}
+              <Line key={s.key} yAxisId={axisOf(s)} dataKey={s.key} name={s.label} stroke={CHART_COLORS[i % 5]} strokeWidth={2.5} dot={{ r: 3 }}>
+                {labels && <LabelList dataKey={s.key} position="top" formatter={labelFmt} fontSize={labelSize} fill="var(--foreground)" />}
               </Line>
             ))}
           </LineChart>
         ) : type === "barh" ? (
-          <BarChart data={data} layout="vertical" margin={{ left: 8, right: 40 }}>
+          <BarChart data={data} layout="vertical" margin={{ left: 8, right: 48 }}>
             {common}
             <XAxis type="number" tick={tick} tickFormatter={(v) => fmtNumber(v)} allowDecimals={false} />
             <YAxis type="category" dataKey="__x" tick={tick} width={Math.min(240, Math.max(80, longest * 7.5))} />
             {series.map((s, i) => (
               <Bar key={s.key} dataKey={s.key} name={s.label} fill={CHART_COLORS[i % 5]} radius={[0, 4, 4, 0]} maxBarSize={28}>
-                {labels && <LabelList dataKey={s.key} position="right" formatter={fmtVal} fontSize={12} fill="var(--foreground)" />}
+                {labels && <LabelList dataKey={s.key} position="right" formatter={labelFmt} fontSize={labelSize} fill="var(--foreground)" />}
               </Bar>
             ))}
           </BarChart>
         ) : (
-          <BarChart data={data} margin={{ left: 8, right: 16, top: 20 }}>
+          <BarChart data={data} margin={{ left: 8, right: dual ? 8 : 16, top: 20 }}>
             {common}
             <XAxis dataKey="__x" tick={tick} />
-            <YAxis tick={tick} tickFormatter={(v) => fmtNumber(v)} allowDecimals={false} />
+            {yAxes}
             {series.map((s, i) => (
-              <Bar key={s.key} dataKey={s.key} name={s.label} fill={CHART_COLORS[i % 5]} radius={[4, 4, 0, 0]} maxBarSize={64}>
-                {labels && <LabelList dataKey={s.key} position="top" formatter={fmtVal} fontSize={12} fill="var(--foreground)" />}
+              <Bar key={s.key} yAxisId={axisOf(s)} dataKey={s.key} name={s.label} fill={CHART_COLORS[i % 5]} radius={[4, 4, 0, 0]} maxBarSize={64}>
+                {labels && <LabelList dataKey={s.key} position="top" formatter={labelFmt} fontSize={labelSize} fill="var(--foreground)" />}
               </Bar>
             ))}
           </BarChart>
@@ -237,31 +257,33 @@ export function ResultChart({ result, columns, display, height = 340, compact = 
 
   if (!result.rows.length) return <NoChart title="ไม่พบข้อมูลตามเงื่อนไข" />;
 
-  const cfgY = (cfg.y ?? []).filter((c) => result.columns.includes(c));
+  const cfgY2 = cfg.y2 && result.columns.includes(cfg.y2) ? cfg.y2 : null;
+  const cfgY = (cfg.y ?? []).filter((c) => result.columns.includes(c) && c !== cfgY2);
   const note = (text: React.ReactNode) => !compact && <p className="mb-3 flex items-start gap-1.5 text-sm text-muted-foreground"><Info className="mt-0.5 size-4 shrink-0" />{text}</p>;
 
   // ---- 1, 2: กราฟจากแถวตรง ๆ ----
-  if (cfgY.length || a.mode === "summary") {
-    if (!cfgY.length && result.rows.length === 1) {
+  if (cfgY.length || cfgY2 || a.mode === "summary") {
+    if (!cfgY.length && !cfgY2 && result.rows.length === 1) {
       const row = result.rows[0];
       const data = a.measures.map((m) => ({ __x: m.label, value: Number(row[m.name]) || 0 }));
       if (data.length < 2) return <NoChart title="ผลลัพธ์มีค่าเดียว — ไม่มีอะไรให้เปรียบเทียบเป็นกราฟ">ดูที่มุมมอง “ตัวเลข” หรือ “ตาราง” แทน</NoChart>;
-      return <>{note("ผลลัพธ์มีแถวเดียว จึงเปรียบเทียบคอลัมน์ตัวเลขแต่ละคอลัมน์")}<ChartBody data={data} series={[{ key: "value", label: "ค่า" }]} type="bar" height={height} /></>;
+      return <>{note("ผลลัพธ์มีแถวเดียว จึงเปรียบเทียบคอลัมน์ตัวเลขแต่ละคอลัมน์")}<ChartBody data={data} series={[{ key: "value", label: "ค่า" }]} type="bar" height={height} labels={cfg.labels} /></>;
     }
     const x = cfg.x && result.columns.includes(cfg.x) ? cfg.x : a.x?.name ?? a.cols.find((c) => c.kind !== "measure")?.name ?? result.columns[0];
-    const ys = cfgY.length ? cfgY : a.measures.filter((m) => m.name !== x).slice(0, 3).map((m) => m.name);
+    const ys = cfgY.length || cfgY2 ? cfgY : a.measures.filter((m) => m.name !== x).slice(0, 3).map((m) => m.name);
+    const all = cfgY2 ? [...ys, cfgY2] : ys;
     const limit = cfg.limit ?? 20;
     const data = result.rows.slice(0, limit).map((r) => {
       const o: Record<string, unknown> = { __x: formatCell(r[x], defs.get(x), x) };
-      for (const y of ys) o[y] = Number(r[y]) || 0;
+      for (const y of all) o[y] = Number(r[y]) || 0;
       return o;
     });
     const type = cfg.type ?? (data.length > 8 || data.some((d) => String(d.__x).length > 14) ? "barh" : "bar");
     const lbl = (c: string) => defs.get(c)?.label || c;
     return (
       <>
-        {note(<>ข้อมูลสรุปมาแล้ว — แกน: <b>{lbl(x)}</b> · ค่า: <b>{ys.map(lbl).join(", ")}</b>{result.rows.length > limit && ` · แสดง ${limit} แถวแรกจาก ${fmtNumber(result.rows.length)}`}</>)}
-        <ChartBody data={data} series={ys.map((y) => ({ key: y, label: lbl(y) }))} type={type} height={height} />
+        {note(<>ข้อมูลสรุปมาแล้ว — แกน: <b>{lbl(x)}</b> · ค่า: <b>{ys.map(lbl).join(", ")}</b>{cfgY2 && <> · แกนขวา: <b>{lbl(cfgY2)}</b></>}{result.rows.length > limit && ` · แสดง ${limit} แถวแรกจาก ${fmtNumber(result.rows.length)}`}</>)}
+        <ChartBody data={data} series={all.map((y) => ({ key: y, label: lbl(y), right: y === cfgY2 }))} type={type} height={height} labels={cfg.labels} />
       </>
     );
   }
@@ -319,7 +341,7 @@ export function ResultChart({ result, columns, display, height = 340, compact = 
           {a.ids.length > 0 && <> · ไม่นำ {a.ids.map((c) => c.label).join(", ")} มาคำนวณ เพราะเป็นรหัส/ข้อมูลประจำตัว</>}
         </span>,
       )}
-      <ChartBody data={data} series={[{ key: "value", label: mLabel }]} type={type} height={height} />
+      <ChartBody data={data} series={[{ key: "value", label: mLabel }]} type={type} height={height} labels={cfg.labels} />
     </>
   );
 }

@@ -36,7 +36,7 @@ export type DisplayDef = {
   views: ViewType[];
   defaultView?: ViewType;
   number?: { column?: string; agg?: "sum" | "count" | "first"; subColumn?: string; subLabel?: string };
-  chart?: { type?: "bar" | "barh" | "line"; x?: string; y?: string[]; limit?: number };
+  chart?: { type?: "bar" | "barh" | "line"; x?: string; y?: string[]; y2?: string; limit?: number; labels?: boolean }; // y2 = คอลัมน์บนแกนขวา (หน่วยต่างกัน เช่น บาท), labels = ตัวเลขบนแท่ง/จุด (ไม่ระบุ = อัตโนมัติ)
   table?: { pageSize?: number; totalRow?: boolean };
   dashboard?: boolean;
 };
