@@ -11,6 +11,8 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { SortableHead, TablePager } from "@/components/ui/data-table";
+import { useTable } from "@/lib/use-table";
 import { api } from "@/lib/config";
 import { thaiDate } from "@/lib/dates";
 import { describeValues, fmtNumber } from "@/lib/format";
@@ -43,6 +45,9 @@ export function SavedManager({ items, usage, initialReport }: { items: SavedItem
       (!reportFilter || i.report_id === reportFilter) &&
       (!s || `${i.name} ${i.report_name} ${i.note ?? ""}`.toLowerCase().includes(s)));
   }, [items, q, reportFilter]);
+  const t = useTable(list, { pageSize: 25, initialSort: { key: "created_at", dir: "desc" },
+    getValue: (i, k) => (k === "cond" ? describeValues(i.values, new Map(i.params.map((p) => [p.name, p.label]))) : (i as Record<string, unknown>)[k]) });
+  const H = (key: string, label: string, align?: "right") => <SortableHead label={label} sortKey={key} sort={t.sort} onSort={t.toggleSort} align={align} />;
   const filterName = reportFilter ? items.find((i) => i.report_id === reportFilter)?.report_name : null;
   const allSel = list.length > 0 && list.every((i) => sel.has(i.id));
 
@@ -65,7 +70,7 @@ export function SavedManager({ items, usage, initialReport }: { items: SavedItem
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder="ค้นหาชื่อแฟ้ม / รายงาน / หมายเหตุ" value={q} onChange={(e) => setQ(e.target.value)} className="h-9 w-72 pl-8" />
+          <Input placeholder="ค้นหาชื่อแฟ้ม / รายงาน / หมายเหตุ" value={q} onChange={(e) => { setQ(e.target.value); t.resetPage(); }} className="h-9 w-72 pl-8" />
         </div>
         {filterName && (
           <Badge variant="secondary" className="h-7 gap-1 pr-1">
@@ -96,16 +101,16 @@ export function SavedManager({ items, usage, initialReport }: { items: SavedItem
             <TableHeader>
               <TableRow>
                 <TableHead className="w-10"><Checkbox checked={allSel} onCheckedChange={(c) => setSel(c ? new Set(list.map((i) => i.id)) : new Set())} aria-label="เลือกทั้งหมด" /></TableHead>
-                <TableHead>ชื่อแฟ้ม</TableHead>
-                <TableHead>เงื่อนไข</TableHead>
-                <TableHead className="text-right">แถว</TableHead>
-                <TableHead>ข้อมูล ณ</TableHead>
-                <TableHead className="text-right">ขนาด</TableHead>
+                {H("name", "ชื่อแฟ้ม")}
+                {H("cond", "เงื่อนไข")}
+                {H("row_count", "แถว", "right")}
+                {H("generated_at", "ข้อมูล ณ")}
+                {H("data_bytes", "ขนาด", "right")}
                 <TableHead className="w-24" />
               </TableRow>
             </TableHeader>
             <TableBody>
-              {list.map((i) => (
+              {t.rows.map((i) => (
                 <TableRow key={i.id} data-state={sel.has(i.id) ? "selected" : undefined}>
                   <TableCell><Checkbox checked={sel.has(i.id)} onCheckedChange={(c) => { const n = new Set(sel); if (c) n.add(i.id); else n.delete(i.id); setSel(n); }} aria-label={`เลือก ${i.name}`} /></TableCell>
                   <TableCell className="max-w-md whitespace-normal">
@@ -133,6 +138,7 @@ export function SavedManager({ items, usage, initialReport }: { items: SavedItem
               {!list.length && <TableRow><TableCell colSpan={7} className="py-10 text-center text-muted-foreground">ไม่พบแฟ้มตามที่ค้นหา</TableCell></TableRow>}
             </TableBody>
           </Table>
+          <TablePager {...t} unit="แฟ้ม" setPageSize={t.setPageSize} className="border-t px-4 py-3" />
         </Card>
       )}
 

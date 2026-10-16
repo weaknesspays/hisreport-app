@@ -22,6 +22,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       reportId: report.id, version: version.version, sql: version.sql, params: version.params, columns: version.columns,
       values, cacheTtl: report.cache_ttl, timeoutSec: report.timeout_sec, rowLimit: report.row_limit, canViewPerson: user.canViewPerson,
     });
+    if (!result.rows.length) return NextResponse.json({ error: "ไม่มีข้อมูลให้ส่งออก" }, { status: 422 });
     const buf = await buildWorkbook({
       title: report.name,
       conditions: describeValues(values, new Map(version.params.map((p) => [p.name, p.label]))),

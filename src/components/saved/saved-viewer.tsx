@@ -117,7 +117,7 @@ export function SavedViewer({ saved: s, canExport }: { saved: Saved; canExport: 
             {s.sql && <Button variant="ghost" size="sm" onClick={() => setShowSql((v) => !v)}><Code2 /> SQL</Button>}
             <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => setDel(true)}><Trash2 /> ลบ</Button>
             {canExport && (
-              <Button size="sm" onClick={exportExcel} disabled={exporting} className="bg-success text-white hover:bg-success/90">
+              <Button size="sm" onClick={exportExcel} disabled={exporting || !s.result.rows.length} title={s.result.rows.length ? "ส่งออก Excel" : "ไม่มีข้อมูลให้ส่งออก"} className="bg-success text-white hover:bg-success/90">
                 {exporting ? <Loader2 className="animate-spin" /> : <Download />} Excel
               </Button>
             )}

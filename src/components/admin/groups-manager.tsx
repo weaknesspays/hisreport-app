@@ -11,6 +11,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { SortableHead, TablePager } from "@/components/ui/data-table";
+import { useTable } from "@/lib/use-table";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { GROUP_ICONS, GroupIcon } from "@/components/app-shell/icons";
 import { api } from "@/lib/config";
@@ -21,6 +23,8 @@ type G = { id?: number; name: string; icon: string; description: string | null; 
 export function GroupsManager({ groups, categories }: { groups: G[]; categories: string[] }) {
   const router = useRouter();
   const [edit, setEdit] = useState<G | null>(null);
+  const t = useTable(groups, { pageSize: 25, getValue: (g, k) => (k === "roles" ? g.roles?.join(", ") : (g as Record<string, unknown>)[k]) });
+  const H = (key: string, label: string, align?: "right") => <SortableHead label={label} sortKey={key} sort={t.sort} onSort={t.toggleSort} align={align} />;
 
   async function save() {
     if (!edit) return;
@@ -40,11 +44,11 @@ export function GroupsManager({ groups, categories }: { groups: G[]; categories:
         </div>
         <Button className="ml-auto" onClick={() => setEdit({ name: "", icon: "folder", description: "", category: categories[0] ?? "", sort: 0, is_active: true })}><Plus /> เพิ่มหัวข้อ</Button>
       </div>
-      <Card className="py-0"><div className="overflow-x-auto">
+      <Card className="gap-0 py-0"><div className="overflow-x-auto">
         <Table>
-          <TableHeader><TableRow><TableHead>หมวดหลัก</TableHead><TableHead>หัวข้อ</TableHead><TableHead className="text-right">รายงาน</TableHead><TableHead>Role ที่เข้าถึง</TableHead><TableHead>ลำดับ</TableHead><TableHead /></TableRow></TableHeader>
+          <TableHeader><TableRow>{H("category", "หมวดหลัก")}{H("name", "หัวข้อ")}{H("report_count", "รายงาน", "right")}{H("roles", "Role ที่เข้าถึง")}{H("sort", "ลำดับ")}<TableHead /></TableRow></TableHeader>
           <TableBody>
-            {groups.map((g) => (
+            {t.rows.map((g) => (
               <TableRow key={g.id} className={cn(!g.is_active && "opacity-50")}>
                 <TableCell className="text-sm text-muted-foreground">{g.category ?? "-"}</TableCell>
                 <TableCell>
@@ -59,7 +63,9 @@ export function GroupsManager({ groups, categories }: { groups: G[]; categories:
             ))}
           </TableBody>
         </Table>
-      </div></Card>
+      </div>
+      <TablePager {...t} unit="หัวข้อ" setPageSize={t.setPageSize} className="border-t px-4 py-3" />
+      </Card>
 
       <Dialog open={!!edit} onOpenChange={(o) => !o && setEdit(null)}>
         <DialogContent>

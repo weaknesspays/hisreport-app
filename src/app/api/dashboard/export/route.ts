@@ -26,6 +26,7 @@ export async function POST(req: Request) {
 
   const usedNames = new Set<string>(["สรุป"]);
   let i = 0;
+  let totalRows = 0;
   for (const w of widgets) {
     i++;
     const report = await getReport(w.reportId);
@@ -49,14 +50,21 @@ export async function POST(req: Request) {
       ws.addRow([]);
       ws.addRow(cols.map((c) => defs.get(c)?.label || c)).font = { bold: true };
       for (const row of res.rows) {
-        ws.addRow(cols.map((c) => (defs.get(c)?.format !== "text" && isNumeric(row[c]) && !/^0\d/.test(String(row[c])) ? Number(row[c]) : row[c] ?? "")));
+        // ชนิดจาก HIS มาก่อน (ข้อความที่เป็นเลขล้วน เช่น DATE_FORMAT → คงเป็นข้อความ) · ไม่มีชนิด → ดูจากค่า
+        ws.addRow(cols.map((c) => {
+          const t = res.columnTypes?.[c];
+          const asNumber = t ? t === "int" || t === "decimal" : defs.get(c)?.format !== "text";
+          return asNumber && isNumeric(row[c]) && !/^0\d/.test(String(row[c])) ? Number(row[c]) : row[c] ?? "";
+        }));
       }
+      totalRows += res.rows.length;
       summary.addRow([i, w.name, sheetName, res.rowCount, res.masked.length ? "ข้อมูลส่วนบุคคลถูกปิดบัง" : ""]);
     } catch (e) {
       summary.addRow([i, w.name, "-", "", e instanceof ReportError ? e.message : "ผิดพลาด"]);
     }
   }
   summary.getColumn(2).width = 50;
+  if (!totalRows) return NextResponse.json({ error: "ไม่มีข้อมูลให้ส่งออก" }, { status: 422 });
   await audit({ userId: u.id, action: "export", detail: `dashboard ${d.id} (${widgets.length} รายงาน)` });
   const buf = await wb.xlsx.writeBuffer();
   return new NextResponse(buf as ArrayBuffer, {

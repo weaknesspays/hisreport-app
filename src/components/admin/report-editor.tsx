@@ -17,6 +17,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { SortableHead } from "@/components/ui/data-table";
+import { useTable } from "@/lib/use-table";
 import { ParamForm } from "@/components/report/param-form";
 import { ResultChart, ResultNumber, ResultTable } from "@/components/report/result-views";
 import { ChartGuide, type ChartExample } from "@/components/admin/chart-guide";
@@ -84,7 +86,10 @@ export function ReportEditor({ initial, groups, isAdmin }: { initial: EditorInit
     const names = test ? test.columns : columns.map((c) => c.name);
     return names.map((n) => columns.find((c) => c.name === n) ?? { name: n });
   }, [test, columns]);
-  const numericCols = useMemo(() => (test ? numericColumns(test.columns, test.rows) : []), [test]);
+  // ตารางตั้งค่า: เรียงเฉพาะการแสดงผล — ลำดับจริง (ลำดับช่องกรอก/คอลัมน์) ไม่เปลี่ยน
+  const ct = useTable(knownCols, { pageSize: 500, getValue: (c, k) => (c as Record<string, unknown>)[k] ?? (k === "format" ? "auto" : k === "total" ? "none" : null) });
+  const pt = useTable(params.map((p, i) => ({ p, i })), { pageSize: 500, getValue: (x, k) => (x.p as Record<string, unknown>)[k] ?? (k === "default" ? x.p.optionsSql ?? x.p.options?.map((o) => o.label).join(",") : null) });
+  const numericCols = useMemo(() => (test ? numericColumns(test.columns, test.rows, test.columnTypes) : []), [test]);
 
   function setCol(name: string, patch: Partial<ColumnDef>) {
     const base = knownCols.map((c) => ({ ...c }));
@@ -272,11 +277,12 @@ export function ReportEditor({ initial, groups, isAdmin }: { initial: EditorInit
             <CardContent className="overflow-x-auto">
               <Table>
                 <TableHeader><TableRow>
-                  <TableHead>ชื่อ</TableHead><TableHead>ป้ายชื่อ</TableHead><TableHead>ชนิด</TableHead><TableHead>ค่าเริ่มต้น / ตัวเลือก</TableHead>
-                  <TableHead className="text-center">บังคับ</TableHead><TableHead className="text-center">หลายค่า</TableHead><TableHead />
+                  {([["name", "ชื่อ"], ["label", "ป้ายชื่อ"], ["type", "ชนิด"], ["default", "ค่าเริ่มต้น / ตัวเลือก"], ["required", "บังคับ", "center"], ["multiple", "หลายค่า", "center"]] as const).map(([k, l, a]) => (
+                    <SortableHead key={k} label={l} sortKey={k} sort={pt.sort} onSort={pt.toggleSort} align={a} />
+                  ))}<TableHead />
                 </TableRow></TableHeader>
                 <TableBody>
-                  {params.map((p, i) => (
+                  {pt.rows.map(({ p, i }) => (
                     <TableRow key={i}>
                       <TableCell><Input className="h-8 w-32 font-mono" value={p.name} onChange={(e) => setParam(i, { name: e.target.value })} /></TableCell>
                       <TableCell><Input className="h-8 w-40" value={p.label} onChange={(e) => setParam(i, { label: e.target.value })} /></TableCell>
@@ -354,11 +360,12 @@ export function ReportEditor({ initial, groups, isAdmin }: { initial: EditorInit
             <CardContent className="overflow-x-auto">
               <Table>
                 <TableHeader><TableRow>
-                  <TableHead>คอลัมน์ SQL</TableHead><TableHead>หัวตาราง</TableHead><TableHead>รูปแบบ</TableHead>
-                  <TableHead className="text-center">ซ่อน</TableHead><TableHead>แถวรวม</TableHead><TableHead className="text-center">ข้อมูลบุคคล</TableHead>
+                  {([["name", "คอลัมน์ SQL"], ["label", "หัวตาราง"], ["format", "รูปแบบ"], ["hidden", "ซ่อน", "center"], ["total", "แถวรวม"], ["person", "ข้อมูลบุคคล", "center"]] as const).map(([k, l, a]) => (
+                    <SortableHead key={k} label={l} sortKey={k} sort={ct.sort} onSort={ct.toggleSort} align={a} />
+                  ))}
                 </TableRow></TableHeader>
                 <TableBody>
-                  {knownCols.map((c) => (
+                  {ct.rows.map((c) => (
                     <TableRow key={c.name}>
                       <TableCell className="font-mono text-sm">{c.name}</TableCell>
                       <TableCell><Input className="h-8 w-44" value={c.label ?? ""} placeholder={c.name} onChange={(e) => setCol(c.name, { label: e.target.value || undefined })} /></TableCell>

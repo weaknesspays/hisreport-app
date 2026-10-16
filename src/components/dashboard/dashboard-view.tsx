@@ -199,12 +199,15 @@ export function DashboardView({ name, widgets, pickable, canExport }: { name: st
   const matches = presets.filter((p) => range.start === p.r.start && range.end === p.r.end).map((p) => p.label);
   const activePreset = picked && matches.includes(picked) ? picked : matches[0];
 
+  // มีอย่างน้อย 1 widget ที่ประมวลผลแล้วและมีข้อมูล จึงให้ส่งออกได้
+  const hasData = widgets.some((w) => { const st = states[w.id]; return st?.s === "done" && st.res.rows.length > 0; });
+
   async function exportAll() {
     setExporting(true);
     const values = Object.fromEntries(widgets.map((w) => [String(w.id), widgetValues(w, range)]));
     const res = await fetch(api("/dashboard/export"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ values }) }).catch(() => null);
     setExporting(false);
-    if (!res?.ok) { toast.error("ส่งออกไม่สำเร็จ"); return; }
+    if (!res?.ok) { toast.error((await res?.json().catch(() => null))?.error || "ส่งออกไม่สำเร็จ"); return; }
     const a = document.createElement("a");
     a.href = URL.createObjectURL(await res.blob());
     a.download = `dashboard-${today}.xlsx`;
@@ -218,7 +221,8 @@ export function DashboardView({ name, widgets, pickable, canExport }: { name: st
         <div className="ml-auto flex gap-2">
           <Button variant="outline" onClick={() => setPicker(true)}><Settings2 /> เลือกรายงาน</Button>
           {canExport && widgets.length > 0 && (
-            <Button onClick={exportAll} disabled={exporting} className="bg-success text-white hover:bg-success/90">
+            <Button onClick={exportAll} disabled={exporting || running || !hasData} className="bg-success text-white hover:bg-success/90"
+              title={hasData ? "ส่งออก Excel ทั้งหน้า" : "ไม่มีข้อมูลให้ส่งออก — กดประมวลผลก่อน"}>
               {exporting ? <Loader2 className="animate-spin" /> : <Download />} <span className="hidden sm:inline">Excel ทั้งหน้า</span>
             </Button>
           )}

@@ -13,6 +13,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   if (!u.canExport) return NextResponse.json({ error: "ไม่มีสิทธิ์ส่งออก Excel" }, { status: 403 });
   try {
     const s = await loadSaved(u, Number((await params).id));
+    if (!s.result.rows.length) return NextResponse.json({ error: "ไม่มีข้อมูลให้ส่งออก" }, { status: 422 });
     const buf = await buildWorkbook({
       title: `${s.report_name} — ${s.name}`,
       conditions: describeValues(s.values, new Map(s.params.map((p) => [p.name, p.label]))),

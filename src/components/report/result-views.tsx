@@ -2,12 +2,13 @@
 
 import { useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, LabelList, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { ChevronLeft, ChevronRight, Info, ShieldAlert } from "lucide-react";
-import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Info, ShieldAlert } from "lucide-react";
+import { Table, TableBody, TableCell, TableFooter, TableHeader, TableRow } from "@/components/ui/table";
+import { SortableHead, TablePager } from "@/components/ui/data-table";
+import { useTable } from "@/lib/use-table";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { formatCell, fmtNumber, isNumeric, numericColumns } from "@/lib/format";
+import { formatCell, fmtNumber, numericColumns, withTextDefaults } from "@/lib/format";
 import { analyzeResult, groupRows, metricLabel, type Metric } from "@/lib/chart-analysis";
 import type { ColumnDef, DisplayDef, RunResult } from "@/lib/report-types";
 import { cn } from "@/lib/utils";
@@ -16,9 +17,9 @@ const CHART_COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var
 
 function useCols(result: RunResult, columns: ColumnDef[]) {
   return useMemo(() => {
-    const defs = new Map(columns.map((c) => [c.name, c]));
+    const defs = withTextDefaults(new Map(columns.map((c) => [c.name, c])), result.columns, result.columnTypes);
     const visible = result.columns.filter((c) => !defs.get(c)?.hidden);
-    const numeric = new Set(numericColumns(result.columns, result.rows));
+    const numeric = new Set(numericColumns(result.columns, result.rows, result.columnTypes).filter((c) => defs.get(c)?.format !== "text"));
     return { defs, visible, numeric };
   }, [result, columns]);
 }
@@ -27,29 +28,12 @@ export function ResultTable({ result, columns, display, compact = false }: { res
   const { defs, visible, numeric } = useCols(result, columns);
   const ids = useMemo(() => new Set(analyzeResult(result, defs).ids.map((c) => c.name)), [result, defs]);
   const [q, setQ] = useState("");
-  const [page, setPage] = useState(0);
-  const [sort, setSort] = useState<{ col: string; dir: 1 | -1 } | null>(null);
-  const pageSize = compact ? 10 : display.table?.pageSize || 50;
-
   const filtered = useMemo(() => {
-    let r = result.rows;
-    if (q.trim()) {
-      const s = q.trim().toLowerCase();
-      r = r.filter((row) => visible.some((c) => String(row[c] ?? "").toLowerCase().includes(s)));
-    }
-    if (sort) {
-      r = [...r].sort((a, b) => {
-        const x = a[sort.col], y = b[sort.col];
-        if (isNumeric(x) && isNumeric(y)) return (Number(x) - Number(y)) * sort.dir;
-        return String(x ?? "").localeCompare(String(y ?? ""), "th") * sort.dir;
-      });
-    }
-    return r;
-  }, [result.rows, q, sort, visible]);
-
-  const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const cur = Math.min(page, pages - 1);
-  const slice = filtered.slice(cur * pageSize, cur * pageSize + pageSize);
+    if (!q.trim()) return result.rows;
+    const s = q.trim().toLowerCase();
+    return result.rows.filter((row) => visible.some((c) => String(row[c] ?? "").toLowerCase().includes(s)));
+  }, [result.rows, q, visible]);
+  const t = useTable(filtered, { pageSize: compact ? 10 : display.table?.pageSize || 50 });
   const totals = display.table?.totalRow
     ? visible.map((c) => {
         const t = defs.get(c)?.total ?? (numeric.has(c) && !ids.has(c) ? "sum" : null); // ไม่รวม HN/AN
@@ -66,7 +50,7 @@ export function ResultTable({ result, columns, display, compact = false }: { res
     <div className="space-y-3">
       {!compact && (
         <div className="flex flex-wrap items-center gap-3">
-          <Input placeholder="ค้นหาในตาราง" value={q} onChange={(e) => { setQ(e.target.value); setPage(0); }} className="h-8 w-56" />
+          <Input placeholder="ค้นหาในตาราง" value={q} onChange={(e) => { setQ(e.target.value); t.resetPage(); }} className="h-8 w-56" />
           <span className="text-sm text-muted-foreground">{fmtNumber(filtered.length)} แถว{result.truncated && ` (แสดง ${fmtNumber(result.rows.length)} จาก ${fmtNumber(result.rowCount)})`}</span>
           {result.masked.length > 0 && <span className="flex items-center gap-1 text-sm text-warning"><ShieldAlert className="size-4" /> ข้อมูลส่วนบุคคลถูกปิดบัง</span>}
         </div>
@@ -77,15 +61,12 @@ export function ResultTable({ result, columns, display, compact = false }: { res
           <TableHeader>
             <TableRow>
               {visible.map((c) => (
-                <TableHead key={c} className={cn("cursor-pointer select-none whitespace-nowrap", numeric.has(c) && "text-right")}
-                  onClick={() => setSort((s) => (s?.col === c ? { col: c, dir: s.dir === 1 ? -1 : 1 } : { col: c, dir: numeric.has(c) ? -1 : 1 }))}>
-                  {defs.get(c)?.label || c}{sort?.col === c ? (sort.dir === 1 ? " ▲" : " ▼") : ""}
-                </TableHead>
+                <SortableHead key={c} label={defs.get(c)?.label || c} sortKey={c} sort={t.sort} onSort={t.toggleSort} align={numeric.has(c) ? "right" : undefined} />
               ))}
             </TableRow>
           </TableHeader>
           <TableBody>
-            {slice.map((row, i) => (
+            {t.rows.map((row, i) => (
               <TableRow key={i}>
                 {visible.map((c) => (
                   <TableCell key={c} className={cn("whitespace-nowrap", numeric.has(c) && "text-right tabular-nums")}>{formatCell(row[c], defs.get(c), c)}</TableCell>
@@ -106,13 +87,7 @@ export function ResultTable({ result, columns, display, compact = false }: { res
           )}
         </Table>
       </div>
-      {pages > 1 && (
-        <div className="flex items-center justify-end gap-2 text-sm">
-          <Button variant="outline" size="icon" className="size-8" disabled={cur === 0} onClick={() => setPage(cur - 1)}><ChevronLeft /></Button>
-          <span>หน้า {cur + 1} / {pages}</span>
-          <Button variant="outline" size="icon" className="size-8" disabled={cur >= pages - 1} onClick={() => setPage(cur + 1)}><ChevronRight /></Button>
-        </div>
-      )}
+      <TablePager {...t} unit="แถว" setPageSize={compact ? undefined : t.setPageSize} />
     </div>
   );
 }

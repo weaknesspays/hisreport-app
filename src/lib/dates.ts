@@ -50,3 +50,25 @@ export function thaiDate(s: string | null | undefined, withTime = false) {
   const out = `${day} ${TH_MONTHS[m - 1]} ${y + 543}`;
   return withTime && t ? `${out} ${t.slice(0, 5)}` : out;
 }
+
+const ISO_DT = /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?/;
+const DMY_DT = /^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/;
+
+/**
+ * แปลงข้อความวันที่ → "YYYY-MM-DD HH:MM:SS" (ค.ศ.) ไว้เรียงลำดับ/จัดกลุ่ม — ไม่ใช่รูปแบบวันที่ → null
+ * รับ: 2026-10-01, 2026-10-01 08:30:00, 01/10/2569, 1/10/2026 08:30 (ปี > 2400 ถือเป็น พ.ศ.)
+ * ใช้กับผลจาก DATE_FORMAT(..., '%d/%m/%Y') ที่เป็นข้อความ ซึ่งถ้าเรียงแบบตัวอักษรจะเรียงตาม "วัน" ก่อน "เดือน"
+ */
+export function dateSortKey(v: unknown): string | null {
+  if (v === null || v === undefined) return null;
+  const s = String(v).trim();
+  const p = (n: number | string) => String(n).padStart(2, "0");
+  let y: number, mo: number, d: number, h = "00", mi = "00", se = "00";
+  let m = ISO_DT.exec(s);
+  if (m) { y = +m[1]; mo = +m[2]; d = +m[3]; h = m[4] ?? h; mi = m[5] ?? mi; se = m[6] ?? se; }
+  else if ((m = DMY_DT.exec(s))) { d = +m[1]; mo = +m[2]; y = +m[3]; h = m[4] ?? h; mi = m[5] ?? mi; se = m[6] ?? se; }
+  else return null;
+  if (y > 2400) y -= 543;
+  if (mo < 1 || mo > 12 || d < 1 || d > 31) return null;
+  return `${y}-${p(mo)}-${p(d)} ${p(h)}:${mi}:${se}`;
+}

@@ -1,4 +1,5 @@
 import { isNumeric } from "./format";
+import { dateSortKey } from "./dates";
 import type { ColumnDef, RunResult } from "./report-types";
 
 /**
@@ -27,7 +28,6 @@ export type Analysis = {
 
 const ID_NAME = /^(hn|an|vn|cid|pid|pop_?id|id|.*_id|idcard|cardid|person_?id|tel|phone|mobile|telephone|zip|postcode|address|addr|fullname|name|fname|lname|ptname|ชื่อ|ชื่อ-?สกุล|ชื่อ-ชื่อสกุล|ชื่อ-นามสกุล|ชื่อผู้ป่วย|เลขบัตร.*|บัตรประชาชน|เบอร์.*|โทร.*|ที่อยู่|บ้านเลขที่)$/i;
 const CAT_NAME = /(moo|หมู่|code|รหัส|icd|^ปี|year|month|เดือน|sex|เพศ|ward|cln|pttype|ตึก|คลินิก|สิทธิ)/i;
-const DATE_RE = /^\d{4}-\d{2}-\d{2}/;
 
 function median(nums: number[]) {
   const s = [...nums].sort((a, b) => a - b);
@@ -46,8 +46,8 @@ export function analyzeResult(result: RunResult, defs: Map<string, ColumnDef>): 
       const unique = vals.length >= 5 && distinct / vals.length >= 0.9;
       let kind: ColKind;
       if (def?.person || ID_NAME.test(name) || ID_NAME.test(label)) kind = "id";
-      else if (vals.length && vals.every((v) => DATE_RE.test(String(v)))) kind = "date";
-      else if (vals.length && vals.every(isNumeric)) {
+      else if (vals.length && vals.every((v) => dateSortKey(v))) kind = "date"; // รวม dd/mm/yyyy (พ.ศ.) จาก DATE_FORMAT
+      else if (vals.length && vals.every(isNumeric) && def?.format !== "text" && result.columnTypes?.[name] !== "text") {
         const nums = vals.map(Number);
         if (CAT_NAME.test(name) || CAT_NAME.test(label)) kind = "category";
         else if (unique && nums.every(Number.isInteger) && median(nums) >= 1000) kind = "id"; // เลขลำดับ/รหัสยาว ๆ
@@ -97,10 +97,11 @@ export function groupRows(rows: Record<string, unknown>[], dim: ColInfo, metric:
   let keyOf = (r: Record<string, unknown>) => String(r[dim.name] ?? "(ว่าง)");
 
   if (dim.kind === "date") {
-    const ds = rows.map((r) => String(r[dim.name] ?? "").slice(0, 10)).filter(Boolean).sort();
+    const iso = (r: Record<string, unknown>) => dateSortKey(r[dim.name]) ?? "";
+    const ds = rows.map((r) => iso(r).slice(0, 10)).filter(Boolean).sort();
     const span = ds.length ? (Date.parse(ds[ds.length - 1]) - Date.parse(ds[0])) / 864e5 : 0;
     unit = span > 62 ? "month" : "day";
-    keyOf = (r) => String(r[dim.name] ?? "").slice(0, unit === "month" ? 7 : 10) || "(ว่าง)";
+    keyOf = (r) => iso(r).slice(0, unit === "month" ? 7 : 10) || "(ว่าง)";
   }
 
   const acc = new Map<string, { sum: number; n: number }>();

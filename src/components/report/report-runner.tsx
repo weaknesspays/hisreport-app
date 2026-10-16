@@ -150,7 +150,8 @@ export function ReportRunner({ reportId, reportName, savedCount = 0, params, col
                 <Save /> บันทึกผล
               </Button>
             )}
-            {canExport && <Button size="sm" onClick={exportExcel} disabled={!result || exporting} className="bg-success text-white hover:bg-success/90">
+            {canExport && <Button size="sm" onClick={exportExcel} disabled={!result?.rows.length || exporting} className="bg-success text-white hover:bg-success/90"
+              title={!result ? "กด “ประมวลผล” ก่อน" : !result.rows.length ? "ไม่มีข้อมูลให้ส่งออก" : "ส่งออก Excel"}>
               {exporting ? <Loader2 className="animate-spin" /> : <Download />} Excel
             </Button>}
           </div>

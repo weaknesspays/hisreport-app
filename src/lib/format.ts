@@ -1,4 +1,4 @@
-import type { ColumnDef } from "./report-types";
+import type { ColType, ColumnDef } from "./report-types";
 import { thaiDate } from "./dates";
 
 const nf0 = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
@@ -9,10 +9,29 @@ export function isNumeric(v: unknown) {
   return typeof v === "string" && v.trim() !== "" && /^-?\d+(\.\d+)?$/.test(v.trim());
 }
 
-/** คอลัมน์ที่เป็นตัวเลขทั้งหมด (ดูจากข้อมูล) */
-export function numericColumns(columns: string[], rows: Record<string, unknown>[]) {
+/**
+ * คอลัมน์ที่เป็นตัวเลข — เชื่อชนิดจาก HIS ก่อน (columnTypes): ข้อความ/วันที่ไม่ใช่ตัวเลข แม้ค่าจะเป็นเลขล้วน
+ * เช่น DATE_FORMAT(brthdate, "%Y%m%d") → "19650312" ต้องแสดงตามนั้น ไม่ใช่ 19,650,312
+ * ไม่มีชนิด (ผลจาก cache เก่า) → ดูจากข้อมูล
+ */
+export function numericColumns(columns: string[], rows: Record<string, unknown>[], columnTypes?: Record<string, ColType>) {
   const sample = rows.slice(0, 200);
-  return columns.filter((c) => sample.length > 0 && sample.every((r) => r[c] === null || r[c] === "" || isNumeric(r[c])) && sample.some((r) => isNumeric(r[c])));
+  return columns.filter((c) => {
+    const t = columnTypes?.[c];
+    if (t) return t === "int" || t === "decimal";
+    return sample.length > 0 && sample.every((r) => r[c] === null || r[c] === "" || isNumeric(r[c])) && sample.some((r) => isNumeric(r[c]));
+  });
+}
+
+/** คอลัมน์ที่ HIS บอกว่าเป็นข้อความ (ไม่มีการตั้งรูปแบบเอง) → แสดงตรงตามค่า */
+export function withTextDefaults(defs: Map<string, ColumnDef>, columns: string[], columnTypes?: Record<string, ColType>) {
+  if (!columnTypes) return defs;
+  const out = new Map(defs);
+  for (const c of columns) {
+    const d = out.get(c);
+    if (columnTypes[c] === "text" && !d?.format) out.set(c, { ...d, name: c, format: "text" });
+  }
+  return out;
 }
 
 /** รหัสอย่าง HN, an, vn, icd10 ไม่ควรใส่คอมมา */

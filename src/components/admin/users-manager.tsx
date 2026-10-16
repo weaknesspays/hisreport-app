@@ -14,6 +14,8 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { SortableHead, TablePager } from "@/components/ui/data-table";
+import { useTable } from "@/lib/use-table";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { api } from "@/lib/config";
 import { thaiDate } from "@/lib/dates";
@@ -145,6 +147,10 @@ export function UsersManager({ meId, loginLockout, groups, roles: initRoles, use
 
   const roleName = (id: number) => roles.find((r) => r.id === id)?.name ?? `#${id}`;
   const shownUsers = users.filter((u) => !q || `${u.username} ${u.display_name} ${u.department ?? ""}`.toLowerCase().includes(q.toLowerCase()));
+  // ตาราง Role อ้างแถวด้วย index (setRole(i)) → เรียงที่ระดับ index แล้วแก้แถวเดิมได้ถูก
+  const rt = useTable(roles.map((r, i) => ({ r, i })), { pageSize: 50, getValue: (x, k) => (k === "name" ? x.r.name : k === "userCount" ? x.r.userCount ?? 0 : k.startsWith("g:") ? x.r.is_admin || x.r.groupIds.includes(Number(k.slice(2))) : (x.r as Record<string, unknown>)[k]) });
+  const ut = useTable(shownUsers, { pageSize: 25, getValue: (u, k) => (k === "roles" ? u.roleIds.map(roleName).join(", ") : k === "auth_source" ? (u.auth_source === "his" ? "บัญชี HIS" : "บัญชีในระบบ") : (u as Record<string, unknown>)[k]) });
+  const UH = (key: string, label: string) => <SortableHead label={label} sortKey={key} sort={ut.sort} onSort={ut.toggleSort} />;
 
   return (
     <div className="space-y-4">
@@ -168,14 +174,14 @@ export function UsersManager({ meId, loginLockout, groups, roles: initRoles, use
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="min-w-44">Role</TableHead>
-                    {groups.map((g) => <TableHead key={g.id} className="min-w-20 whitespace-normal text-center text-xs" title={g.category ?? ""}>{g.name}</TableHead>)}
-                    {FLAGS.map((f) => <TableHead key={f.k} className="min-w-20 whitespace-normal text-center text-xs" title={f.hint}>{f.label}</TableHead>)}
+                    <SortableHead label="Role" sortKey="name" sort={rt.sort} onSort={rt.toggleSort} className="min-w-44" />
+                    {groups.map((g) => <SortableHead key={g.id} label={<span className="whitespace-normal text-xs" title={g.category ?? ""}>{g.name}</span>} sortKey={`g:${g.id}`} sort={rt.sort} onSort={rt.toggleSort} align="center" className="min-w-20 [&_button]:h-auto [&_button]:min-h-10 [&_button]:whitespace-normal" />)}
+                    {FLAGS.map((f) => <SortableHead key={f.k} label={<span className="whitespace-normal text-xs" title={f.hint}>{f.label}</span>} sortKey={f.k} sort={rt.sort} onSort={rt.toggleSort} align="center" className="min-w-20 [&_button]:h-auto [&_button]:min-h-10 [&_button]:whitespace-normal" />)}
                     <TableHead />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {roles.map((r, i) => (
+                  {rt.rows.map(({ r, i }) => (
                     <TableRow key={r.id ?? `new${i}`}>
                       <TableCell>
                         <Input className="h-8" value={r.name} onChange={(e) => setRole(i, { name: e.target.value })} />
@@ -202,14 +208,14 @@ export function UsersManager({ meId, loginLockout, groups, roles: initRoles, use
 
         <TabsContent value="users" className="space-y-3">
           <div className="flex flex-wrap gap-2">
-            <Input placeholder="ค้นหาผู้ใช้" value={q} onChange={(e) => setQ(e.target.value)} className="h-9 w-64" />
+            <Input placeholder="ค้นหาผู้ใช้" value={q} onChange={(e) => { setQ(e.target.value); ut.resetPage(); }} className="h-9 w-64" />
             <Button className="ml-auto" onClick={() => setEdit({ username: "", display_name: "", department: "", auth_source: "his", is_active: true, roleIds: [] })}><Plus /> เพิ่มผู้ใช้</Button>
           </div>
-          <Card className="py-0"><div className="overflow-x-auto">
+          <Card className="gap-0 py-0"><div className="overflow-x-auto">
             <Table>
-              <TableHeader><TableRow><TableHead>ชื่อผู้ใช้</TableHead><TableHead>ชื่อ</TableHead><TableHead>หน่วยงาน</TableHead><TableHead>Role</TableHead><TableHead>เข้าสู่ระบบ</TableHead><TableHead>ล่าสุด</TableHead><TableHead /></TableRow></TableHeader>
+              <TableHeader><TableRow>{UH("username", "ชื่อผู้ใช้")}{UH("display_name", "ชื่อ")}{UH("department", "หน่วยงาน")}{UH("roles", "Role")}{UH("auth_source", "เข้าสู่ระบบ")}{UH("last_login", "ล่าสุด")}<TableHead /></TableRow></TableHeader>
               <TableBody>
-                {shownUsers.map((u) => (
+                {ut.rows.map((u) => (
                   <TableRow key={u.id} className={u.is_active ? "" : "opacity-50"}>
                     <TableCell className="font-medium">{u.username}</TableCell>
                     <TableCell>{u.display_name}</TableCell>
@@ -222,7 +228,9 @@ export function UsersManager({ meId, loginLockout, groups, roles: initRoles, use
                 ))}
               </TableBody>
             </Table>
-          </div></Card>
+          </div>
+          <TablePager {...ut} unit="ผู้ใช้" setPageSize={ut.setPageSize} className="border-t px-4 py-3" />
+          </Card>
         </TabsContent>
 
         <TabsContent value="security" className="space-y-4">

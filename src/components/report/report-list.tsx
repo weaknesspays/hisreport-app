@@ -1,15 +1,21 @@
+"use client";
+
 import Link from "next/link";
 import { FileBarChart } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { TablePager } from "@/components/ui/data-table";
+import { useTable } from "@/lib/use-table";
 
 export type ReportListItem = { id: number; name: string; description: string | null; group_name?: string | null; has_person_data?: number; extra?: string };
 
 export function ReportList({ items, empty = "ไม่พบรายงาน", showGroup = false }: { items: ReportListItem[]; empty?: string; showGroup?: boolean }) {
+  const t = useTable(items, { pageSize: 24 });
   if (!items.length) return <p className="py-10 text-center text-muted-foreground">{empty}</p>;
   return (
+    <div className="space-y-3">
     <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-      {items.map((r) => (
+      {t.rows.map((r) => (
         <Link key={r.id} href={`/reports/${r.id}`} className="group">
           <Card className="h-full py-0 transition-colors group-hover:border-primary">
             <CardContent className="flex gap-3 p-4">
@@ -27,6 +33,8 @@ export function ReportList({ items, empty = "ไม่พบรายงาน",
           </Card>
         </Link>
       ))}
+    </div>
+    <TablePager {...t} unit="รายงาน" setPageSize={t.setPageSize} pageSizes={[12, 24, 48, 96]} />
     </div>
   );
 }

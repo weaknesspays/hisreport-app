@@ -14,6 +14,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { api } from "@/lib/config";
 import { thaiDate } from "@/lib/dates";
 import { cn } from "@/lib/utils";
+import { TablePager } from "@/components/ui/data-table";
+import { useTable } from "@/lib/use-table";
 
 export type RequestRow = { id: number; type: string; title: string; detail: string | null; urgency: string; status: string; contact: string | null; created_at: string; username: string; display_name: string; department: string | null };
 
@@ -27,6 +29,7 @@ export function RequestsView({ list, isAdmin }: { list: RequestRow[]; isAdmin: b
   const router = useRouter();
   const [form, setForm] = useState({ type: "new", title: "", detail: "", urgency: "normal", contact: "" });
   const [busy, setBusy] = useState(false);
+  const t = useTable(list, { pageSize: 10 });
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -75,7 +78,7 @@ export function RequestsView({ list, isAdmin }: { list: RequestRow[]; isAdmin: b
       <div className="space-y-3">
         <h2 className="text-lg font-semibold">{isAdmin ? "คำขอทั้งหมด" : "คำขอของฉัน"}</h2>
         {!list.length && <p className="text-muted-foreground">ยังไม่มีคำขอ</p>}
-        {list.map((r) => {
+        {t.rows.map((r) => {
           const idx = STEPS.findIndex(([k]) => k === r.status);
           return (
             <Card key={r.id} className="py-0">
@@ -104,6 +107,7 @@ export function RequestsView({ list, isAdmin }: { list: RequestRow[]; isAdmin: b
             </Card>
           );
         })}
+        <TablePager {...t} unit="คำขอ" setPageSize={t.setPageSize} pageSizes={[10, 25, 50]} />
       </div>
     </div>
   );
