@@ -250,3 +250,15 @@ CREATE TABLE IF NOT EXISTS user_report_order (
     FOREIGN KEY (group_id) REFERENCES report_group(id) ON DELETE CASCADE,
     FOREIGN KEY (report_id) REFERENCES report(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
+
+-- ลำดับกลางของกล่องรายงานในหัวข้อ ที่ผู้ดูแลระบบจัดให้ทุกคน (ใช้เมื่อผู้ใช้ไม่ได้จัดลำดับเอง)
+-- ลำดับที่แสดง: user_report_order → group_report_order → ชื่อรายงาน
+CREATE TABLE IF NOT EXISTS group_report_order (
+    group_id   INT UNSIGNED NOT NULL,
+    report_id  INT UNSIGNED NOT NULL,
+    sort       INT NOT NULL,
+    updated_by INT UNSIGNED NULL,
+    PRIMARY KEY (group_id, report_id),
+    FOREIGN KEY (group_id) REFERENCES report_group(id) ON DELETE CASCADE,
+    FOREIGN KEY (report_id) REFERENCES report(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
