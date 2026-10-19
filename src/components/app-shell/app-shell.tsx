@@ -15,6 +15,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ThemeMenu } from "@/components/theme/theme-menu";
+import { RequestDialog } from "@/components/request-dialog";
 import { GroupIcon } from "./icons";
 import { APP_NAME, api } from "@/lib/config";
 import { cn } from "@/lib/utils";
@@ -116,6 +117,7 @@ function pageTitle(path: string, groups: ShellGroup[]) {
 
 export function AppShell({ groups, user, children }: { groups: ShellGroup[]; user: ShellUser; children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
+  const [requestOpen, setRequestOpen] = useState(false);
   const router = useRouter();
   const path = usePathname();
 
@@ -157,7 +159,8 @@ export function AppShell({ groups, user, children }: { groups: ShellGroup[]; use
             <Input name="q" placeholder="ค้นหารายงาน เช่น CKD, refer, ไข้เลือดออก" className="h-9 pl-8" />
           </form>
           <div className="ml-auto flex items-center gap-1">
-            <Button variant="ghost" size="icon" asChild aria-label="ขอรายงานใหม่"><Link href="/requests"><ClipboardList className="size-5" /></Link></Button>
+            <Button variant="ghost" size="icon" aria-label="ขอรายงานใหม่ / ขอแก้ไข / แจ้งตัวเลขผิดปกติ" title="ขอรายงานใหม่ / ขอแก้ไข / แจ้งตัวเลขผิดปกติ" onClick={() => setRequestOpen(true)}><ClipboardList className="size-5" /></Button>
+            <RequestDialog open={requestOpen} onOpenChange={setRequestOpen} />
             <ThemeMenu />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -175,6 +178,7 @@ export function AppShell({ groups, user, children }: { groups: ShellGroup[]; use
                   <div className="truncate text-xs font-normal text-muted-foreground">{user.username} · {user.roles.join(", ") || "ยังไม่มีสิทธิ์"}</div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem asChild><Link href="/requests"><ClipboardList /> {user.isAdmin ? "คำขอทั้งหมด" : "คำขอของฉัน"}</Link></DropdownMenuItem>
                 <DropdownMenuItem asChild><Link href="/settings"><Settings /> ตั้งค่าการแสดงผล</Link></DropdownMenuItem>
                 <DropdownMenuItem onClick={logout}><LogOut /> ออกจากระบบ</DropdownMenuItem>
               </DropdownMenuContent>

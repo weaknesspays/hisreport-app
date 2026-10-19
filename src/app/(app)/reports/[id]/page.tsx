@@ -2,11 +2,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ShieldAlert } from "lucide-react";
 import { requireUser } from "@/lib/auth";
-import { canViewReport, getReport, viewableVersion } from "@/lib/reports";
+import { canViewReport, getReport, getVersion, viewableVersion } from "@/lib/reports";
 import { one } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { ReportRunner } from "@/components/report/report-runner";
 import { FavoriteButton } from "@/components/report/favorite-button";
+import { ReportSqlPanel } from "@/components/report/report-sql-panel";
 import { Badge } from "@/components/ui/badge";
 import type { ParamValues } from "@/lib/report-types";
 
@@ -36,6 +37,8 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
   const version = await viewableVersion(report, useLatest);
   if (!version) notFound();
 
+  // SQL ส่งไปเบราว์เซอร์เฉพาะผู้ดูแลระบบ (ผู้ใช้ทั่วไปไม่เห็นโครงสร้างคิวรี่)
+  const latest = user.isAdmin ? (report.latest_version === version.version ? version : await getVersion(report.id, report.latest_version)) : null;
   const recent = await one<{ params_json: unknown }>("SELECT params_json FROM user_recent WHERE user_id=? AND report_id=?", [user.id, report.id]);
   const fav = await one("SELECT 1 FROM user_favorite WHERE user_id=? AND report_id=?", [user.id, report.id]);
   const savedCount = await one<{ n: number }>("SELECT COUNT(*) AS n FROM saved_result WHERE user_id=? AND report_id=?", [user.id, report.id]);
@@ -53,6 +56,10 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
         </div>
         {report.description && <p className="mt-1 max-w-4xl text-sm text-muted-foreground"><b>นิยาม:</b> {report.description}</p>}
       </div>
+      {user.isAdmin && latest && (
+        <ReportSqlPanel key={`${version.version}-${latest.version}-${latest.created_at}`} reportId={report.id} publishedVersion={report.published_version}
+          viewed={{ version: version.version, sql: version.sql }} latest={{ version: latest.version, sql: latest.sql }} />
+      )}
       <ReportRunner
         reportId={report.id}
         reportName={report.name}

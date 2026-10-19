@@ -318,3 +318,30 @@ export async function loadOptions(def: ParamDef) {
   const [vc, lc] = [r.columns[0], r.columns[1] ?? r.columns[0]];
   return r.rows.map((row) => ({ value: String(row[vc] ?? ""), label: String(row[lc] ?? "") }));
 }
+
+// ---------------------------------------------------------------- validate
+
+/**
+ * ตรวจ SQL ก่อนบันทึก: SELECT เท่านั้น, ทุก {ตัวแปร} ต้องกำหนดไว้, และ HIS รับได้จริง (EXPLAIN — ไม่รันคิวรี่)
+ * ใช้ค่าเริ่มต้นของตัวแปรแต่ละตัว (ตัวแปรเสริมที่ว่าง → บล็อก [[ ]] ถูกตัด) · คืนข้อความผิดพลาด หรือ null ถ้าผ่าน
+ */
+export async function validateSqlOnHis(sql: string, params: ParamDef[]): Promise<string | null> {
+  try {
+    assertSelectOnly(sql);
+    const known = new Set(params.map((p) => p.name));
+    const missing = tokensInSql(sql).map((t) => t.name).filter((n) => !known.has(n));
+    if (missing.length) return `ยังไม่ได้กำหนดตัวแปร: ${missing.map((n) => `{${n}}`).join(", ")} — เพิ่มที่ตัวแก้ไขรายงาน แท็บ “SQL และตัวแปร”`;
+    const raw: ParamValues = {};
+    for (const p of params) {
+      const v = defaultValue(p);
+      raw[p.name] = !isEmptyValue(v) || !p.required ? v : p.multiple ? ["0"] : "0";
+    }
+    const { values } = normalizeValues(params, raw);
+    const c = compileSql(sql, params, values);
+    const body = splitSessionVars(c.sql).body.trim().replace(/;\s*$/, "");
+    await hisDb().query({ sql: `EXPLAIN ${body}`, timeout: 20000 }, c.args);
+    return null;
+  } catch (e) {
+    return String((e as Error).message).slice(0, 300);
+  }
+}

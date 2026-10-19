@@ -30,6 +30,7 @@ Next.js 15 (App Router, `basePath: /hisreport-app`) + TypeScript, Tailwind v4 + 
 - `src/lib/excel.ts` — `buildWorkbook()` ใช้ร่วมระหว่าง export รายงานและแฟ้มที่บันทึกไว้ (ใช้ `columnTypes` จาก HIS ถ้ามี)
 - `src/lib/chart-analysis.ts` — ก่อนทำกราฟแยกชนิดคอลัมน์ (id/date/category/measure); ผลสรุปแล้ว → กราฟตรง, รายการรายบุคคล → นับ/รวมแยกตามคอลัมน์ที่ผู้ใช้เลือก, จัดกลุ่มไม่ได้ → บอกเหตุผล (ค่าที่ผู้ดูแลตั้งใน display.chart.y มาก่อนเสมอ)
 - `src/lib/auth.ts` — `getCurrentUser()` (สิทธิ์รวมจากทุก Role), `authenticate()`
+- ลำดับกล่องรายงานในหน้าหัวข้อ: ผู้ใช้ลากจัดเอง (`SortableReportList`, ปุ่ม ↑↓ สำหรับมือถือ) เก็บใน `user_report_order` แยกต่อผู้ใช้ — API `PUT/DELETE /api/groups/[id]/order`; รายงานที่ยังไม่เคยจัดต่อท้ายตามชื่อ
 - `src/components/theme/color-provider.tsx` — ธีม: localStorage (`hr-theme`, `hr-color`) + `user_setting` ในฐาน (ค่าในฐานเป็นหลักหลัง login)
 - ชุดสี: `<html data-color>` + ตัวแปร `--brand` ใน `globals.css` → primary/ring/sidebar/chart-1
 - โทนสีพื้นฐานตาม mockup (พื้น `#f3f6fa`, เมนูข้างกรมท่า `--sidebar`, โลโก้ `--logo`, หัวตาราง `--table-head`, พื้นหน้า login `--login-bg`) — มีชุด `.dark` คู่กัน

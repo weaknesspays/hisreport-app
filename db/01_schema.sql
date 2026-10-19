@@ -238,3 +238,15 @@ CREATE TABLE IF NOT EXISTS app_setting (
     updated_by  INT UNSIGNED NULL,
     updated_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ลำดับกล่องรายงานในหน้าหัวข้อ ที่ผู้ใช้ลากจัดเอง (ของใครของมัน) — รายงานที่ไม่มีแถวนี้ต่อท้ายตามลำดับปกติ
+CREATE TABLE IF NOT EXISTS user_report_order (
+    user_id   INT UNSIGNED NOT NULL,
+    group_id  INT UNSIGNED NOT NULL,
+    report_id INT UNSIGNED NOT NULL,
+    sort      INT NOT NULL,
+    PRIMARY KEY (user_id, group_id, report_id),
+    FOREIGN KEY (user_id) REFERENCES app_user(id) ON DELETE CASCADE,
+    FOREIGN KEY (group_id) REFERENCES report_group(id) ON DELETE CASCADE,
+    FOREIGN KEY (report_id) REFERENCES report(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
