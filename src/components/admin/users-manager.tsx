@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Pencil, Plus, Save, Trash2 } from "lucide-react";
+import { Copy, KeyRound, Loader2, Pencil, Plus, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,16 +12,20 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { SortableHead, TablePager } from "@/components/ui/data-table";
 import { useTable } from "@/lib/use-table";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { api } from "@/lib/config";
 import { thaiDate } from "@/lib/dates";
+import { cn } from "@/lib/utils";
 
 type Role = { id?: number; name: string; can_export: boolean; can_view_person: boolean; can_author: boolean; is_admin: boolean; groupIds: number[]; userCount?: number };
-type User = { id?: number; username: string; display_name: string; department: string | null; auth_source: "his" | "local"; is_active: boolean; last_login?: string | null; roleIds: number[]; password?: string };
+type User = {
+  id?: number; username: string; display_name: string; department: string | null; auth_source: "his" | "local"; is_active: boolean;
+  last_login?: string | null; roleIds: number[]; must_change_pw?: boolean;
+  password?: string; generatePassword?: boolean; mustChange?: boolean; savedSource?: "his" | "local"; // savedSource = ชนิดที่บันทึกอยู่ในฐาน
+};
 
 const FLAGS: { k: "can_export" | "can_view_person" | "can_author" | "is_admin"; label: string; hint: string }[] = [
   { k: "can_export", label: "Export", hint: "ส่งออก Excel / พิมพ์" },
@@ -114,6 +118,8 @@ export function UsersManager({ meId, loginLockout, groups, roles: initRoles, use
   const [roles, setRoles] = useState(initRoles);
   const [saving, setSaving] = useState(false);
   const [edit, setEdit] = useState<User | null>(null);
+  const [savingUser, setSavingUser] = useState(false);
+  const [tempShown, setTempShown] = useState<{ username: string; password: string; mustChange: boolean } | null>(null);
   const [q, setQ] = useState("");
 
   const setRole = (i: number, patch: Partial<Role>) => setRoles(roles.map((r, j) => (j === i ? { ...r, ...patch } : r)));
@@ -137,13 +143,20 @@ export function UsersManager({ meId, loginLockout, groups, roles: initRoles, use
 
   async function saveUser() {
     if (!edit) return;
-    const body = { ...edit, password: edit.password || undefined };
+    setSavingUser(true);
+    const body = { ...edit, password: edit.generatePassword ? undefined : edit.password || undefined, mustChange: edit.mustChange ?? true };
     const res = await fetch(api("/admin/users"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).catch(() => null);
-    if (!res?.ok) { toast.error((await res?.json().catch(() => null))?.error || "บันทึกไม่สำเร็จ"); return; }
+    const d = await res?.json().catch(() => null);
+    setSavingUser(false);
+    if (!res?.ok) { toast.error(d?.error || "บันทึกไม่สำเร็จ"); return; }
     toast.success("บันทึกผู้ใช้แล้ว");
+    if (d?.tempPassword) setTempShown({ username: edit.username, password: d.tempPassword, mustChange: edit.mustChange ?? true });
     setEdit(null);
     router.refresh();
   }
+  const defaultRoleIds = roles.filter((r) => r.id && r.name === "เจ้าหน้าที่").map((r) => r.id!);
+  const isLocal = edit?.auth_source === "local";
+  const needsPw = !!edit && isLocal && edit.savedSource !== "local"; // บัญชีใหม่ หรือเพิ่งเปลี่ยนเป็น local → ต้องมีรหัส
 
   const roleName = (id: number) => roles.find((r) => r.id === id)?.name ?? `#${id}`;
   const shownUsers = users.filter((u) => !q || `${u.username} ${u.display_name} ${u.department ?? ""}`.toLowerCase().includes(q.toLowerCase()));
@@ -209,7 +222,7 @@ export function UsersManager({ meId, loginLockout, groups, roles: initRoles, use
         <TabsContent value="users" className="space-y-3">
           <div className="flex flex-wrap gap-2">
             <Input placeholder="ค้นหาผู้ใช้" value={q} onChange={(e) => { setQ(e.target.value); ut.resetPage(); }} className="h-9 w-64" />
-            <Button className="ml-auto" onClick={() => setEdit({ username: "", display_name: "", department: "", auth_source: "his", is_active: true, roleIds: [] })}><Plus /> เพิ่มผู้ใช้</Button>
+            <Button className="ml-auto" onClick={() => setEdit({ username: "", display_name: "", department: "", auth_source: "his", is_active: true, roleIds: defaultRoleIds, mustChange: true })}><Plus /> เพิ่มผู้ใช้</Button>
           </div>
           <Card className="gap-0 py-0"><div className="overflow-x-auto">
             <Table>
@@ -221,9 +234,12 @@ export function UsersManager({ meId, loginLockout, groups, roles: initRoles, use
                     <TableCell>{u.display_name}</TableCell>
                     <TableCell className="text-sm">{u.department}</TableCell>
                     <TableCell>{u.roleIds.length ? u.roleIds.map((r) => <Badge key={r} variant="secondary" className="mr-1">{roleName(r)}</Badge>) : <span className="text-xs text-muted-foreground">ยังไม่มี (ไม่เห็นรายงานใด)</span>}</TableCell>
-                    <TableCell><Badge variant="outline">{u.auth_source === "his" ? "บัญชี HIS" : "บัญชีในระบบ"}</Badge></TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      <Badge variant="outline">{u.auth_source === "his" ? "บัญชี HIS" : "บัญชีในระบบ"}</Badge>
+                      {u.must_change_pw && <Badge variant="outline" className="ml-1 border-warning/50 text-warning" title="ใช้รหัสที่ผู้ดูแลตั้งให้อยู่ — ต้องเปลี่ยนตอนเข้าสู่ระบบ">รอเปลี่ยนรหัส</Badge>}
+                    </TableCell>
                     <TableCell className="whitespace-nowrap text-sm text-muted-foreground">{u.last_login ? thaiDate(u.last_login, true) : "-"}</TableCell>
-                    <TableCell><Button size="sm" variant="ghost" onClick={() => setEdit({ ...u, password: "" })}><Pencil /> แก้ไข</Button></TableCell>
+                    <TableCell><Button size="sm" variant="ghost" onClick={() => setEdit({ ...u, password: "", savedSource: u.auth_source, mustChange: true })}><Pencil /> แก้ไข</Button></TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -238,27 +254,59 @@ export function UsersManager({ meId, loginLockout, groups, roles: initRoles, use
         </TabsContent>
       </Tabs>
 
-      <Dialog open={!!edit} onOpenChange={(o) => !o && setEdit(null)}>
+      <Dialog open={!!edit} onOpenChange={(o) => !o && !savingUser && setEdit(null)}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader><DialogTitle>{edit?.id ? "แก้ไขผู้ใช้" : "เพิ่มผู้ใช้"}</DialogTitle></DialogHeader>
           {edit && (
             <div className="grid gap-3 sm:grid-cols-2">
-              {!edit.id && edit.auth_source === "his" && (
+              {/* วิธีเข้าสู่ระบบ — เลือกก่อน เพราะเปลี่ยนว่าต้องกรอกอะไร */}
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label>วิธีเข้าสู่ระบบ</Label>
+                <div role="radiogroup" aria-label="วิธีเข้าสู่ระบบ" className="grid grid-cols-2 gap-2">
+                  {([["his", "บัญชี HIS", "ใช้ชื่อผู้ใช้/รหัสผ่านเดียวกับโปรแกรม HIS"], ["local", "บัญชีในระบบนี้", "สำหรับผู้ที่ไม่มีบัญชี HIS — ผู้ดูแลตั้งรหัสให้"]] as const).map(([k, l, hint]) => (
+                    <button key={k} type="button" role="radio" aria-checked={edit.auth_source === k} disabled={edit.id === meId && edit.auth_source !== k}
+                      onClick={() => setEdit({ ...edit, auth_source: k })}
+                      className={cn("rounded-md border p-2.5 text-left transition-colors disabled:opacity-50", edit.auth_source === k ? "border-primary bg-primary/5 ring-1 ring-primary" : "hover:bg-muted")}>
+                      <div className="text-sm font-medium">{l}</div>
+                      <div className="text-xs text-muted-foreground">{hint}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {!edit.id && !isLocal && (
                 <HisUserSearch onPick={(p) => setEdit({ ...edit, username: p.username, display_name: p.displayName })} />
               )}
-              <div className="space-y-1.5"><Label>ชื่อผู้ใช้ (ตรงกับ HIS) *</Label><Input value={edit.username} onChange={(e) => setEdit({ ...edit, username: e.target.value })} /></div>
-              <div className="space-y-1.5"><Label>ชื่อ-สกุล *</Label><Input value={edit.display_name} onChange={(e) => setEdit({ ...edit, display_name: e.target.value })} /></div>
-              <div className="space-y-1.5"><Label>หน่วยงาน</Label><Input value={edit.department ?? ""} onChange={(e) => setEdit({ ...edit, department: e.target.value })} /></div>
-              <div className="space-y-1.5">
-                <Label>วิธีเข้าสู่ระบบ</Label>
-                <Select value={edit.auth_source} onValueChange={(v) => setEdit({ ...edit, auth_source: v as "his" | "local" })}>
-                  <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-                  <SelectContent><SelectItem value="his">บัญชี HIS</SelectItem><SelectItem value="local">บัญชีในระบบนี้</SelectItem></SelectContent>
-                </Select>
+              <div className="space-y-1.5"><Label>{isLocal ? "ชื่อผู้ใช้ (ตั้งใหม่) *" : "ชื่อผู้ใช้ (ตรงกับ HIS) *"}</Label>
+                <Input value={edit.username} autoComplete="off" onChange={(e) => setEdit({ ...edit, username: e.target.value.trim() })} placeholder={isLocal ? "เช่น ext.somchai" : ""} />
+                {isLocal && <p className="text-xs text-muted-foreground">ห้ามซ้ำกับชื่อผู้ใช้ใน HIS (ระบบตรวจให้)</p>}
               </div>
-              {edit.auth_source === "local" && (
-                <div className="space-y-1.5 sm:col-span-2"><Label>รหัสผ่าน {edit.id ? "(เว้นว่าง = ไม่เปลี่ยน)" : "*"}</Label><Input type="password" autoComplete="new-password" value={edit.password ?? ""} onChange={(e) => setEdit({ ...edit, password: e.target.value })} /></div>
+              <div className="space-y-1.5"><Label>ชื่อ-สกุล *</Label><Input value={edit.display_name} onChange={(e) => setEdit({ ...edit, display_name: e.target.value })} /></div>
+              <div className="space-y-1.5 sm:col-span-2"><Label>หน่วยงาน</Label><Input value={edit.department ?? ""} onChange={(e) => setEdit({ ...edit, department: e.target.value })} /></div>
+
+              {isLocal && (
+                <div className="space-y-2 rounded-md border bg-muted/30 p-3 sm:col-span-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Label className="mr-auto">{needsPw ? "รหัสผ่าน *" : "ตั้งรหัสผ่านใหม่ (เว้นว่าง = ไม่เปลี่ยน)"}</Label>
+                    <Button type="button" size="sm" variant={edit.generatePassword ? "default" : "outline"} className="h-7"
+                      onClick={() => setEdit({ ...edit, generatePassword: !edit.generatePassword, password: "" })}>
+                      <KeyRound /> {edit.generatePassword ? "จะสุ่มรหัสชั่วคราวให้" : "สุ่มรหัสชั่วคราว"}
+                    </Button>
+                  </div>
+                  {!edit.generatePassword ? (
+                    <Input type="password" autoComplete="new-password" aria-label="รหัสผ่าน" value={edit.password ?? ""} onChange={(e) => setEdit({ ...edit, password: e.target.value })}
+                      placeholder="อย่างน้อย 8 ตัว มีทั้งตัวอักษรและตัวเลข" />
+                  ) : <p className="text-xs text-muted-foreground">ระบบจะสุ่มรหัส 10 ตัวและแสดงให้คัดลอกหลังกดบันทึก (แสดงครั้งเดียว)</p>}
+                  {(edit.generatePassword || !!edit.password) && (
+                    <label className="flex items-center gap-2 text-sm">
+                      <Checkbox checked={edit.mustChange ?? true} onCheckedChange={(v) => setEdit({ ...edit, mustChange: !!v })} />
+                      ให้ผู้ใช้เปลี่ยนรหัสเองเมื่อเข้าสู่ระบบครั้งถัดไป (แนะนำ)
+                    </label>
+                  )}
+                  {edit.id && (edit.generatePassword || !!edit.password) && <p className="text-xs text-warning">ตั้งรหัสใหม่แล้ว ผู้ใช้ที่เข้าสู่ระบบค้างอยู่จะต้องเข้าสู่ระบบใหม่</p>}
+                </div>
               )}
+              {!isLocal && edit.savedSource === "local" && <p className="text-xs text-warning sm:col-span-2">เปลี่ยนเป็นบัญชี HIS: รหัสผ่านในระบบนี้จะถูกลบ ผู้ใช้ต้องใช้รหัสของ HIS</p>}
+
               <div className="space-y-1.5 sm:col-span-2">
                 <Label>Role</Label>
                 <div className="flex flex-wrap gap-3">
@@ -269,11 +317,38 @@ export function UsersManager({ meId, loginLockout, groups, roles: initRoles, use
                     </label>
                   ))}
                 </div>
+                {!edit.roleIds.length && <p className="text-xs text-warning">ยังไม่เลือก Role — ผู้ใช้จะเข้าระบบได้แต่ไม่เห็นรายงานใด</p>}
               </div>
               <label className="flex items-center gap-2 sm:col-span-2"><Switch checked={edit.is_active} disabled={edit.id === meId} onCheckedChange={(v) => setEdit({ ...edit, is_active: v })} /> ใช้งาน</label>
             </div>
           )}
-          <DialogFooter><Button variant="outline" onClick={() => setEdit(null)}>ยกเลิก</Button><Button onClick={saveUser}>บันทึก</Button></DialogFooter>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEdit(null)} disabled={savingUser}>ยกเลิก</Button>
+            <Button onClick={saveUser} disabled={savingUser || !edit?.username || !edit?.display_name.trim() || (needsPw && !edit?.generatePassword && !edit?.password)}>
+              {savingUser ? <Loader2 className="animate-spin" /> : <Save />} บันทึก
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* รหัสชั่วคราว — แสดงครั้งเดียว ระบบเก็บไว้แค่ค่า hash */}
+      <Dialog open={!!tempShown} onOpenChange={(o) => !o && setTempShown(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader><DialogTitle>รหัสผ่านชั่วคราวของ {tempShown?.username}</DialogTitle></DialogHeader>
+          {tempShown && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 rounded-md border bg-muted/40 p-3">
+                <code className="flex-1 select-all text-center font-mono text-xl tracking-wider">{tempShown.password}</code>
+                <Button size="sm" variant="outline" onClick={() => navigator.clipboard.writeText(tempShown.password).then(() => toast.success("คัดลอกแล้ว"), () => toast.error("คัดลอกไม่สำเร็จ"))}><Copy /> คัดลอก</Button>
+              </div>
+              <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+                <li>แจ้งรหัสนี้ให้ผู้ใช้โดยตรง — <b>ระบบแสดงครั้งเดียว</b> ปิดหน้าต่างแล้วดูอีกไม่ได้ (ตั้งใหม่ได้)</li>
+                <li>เข้าสู่ระบบที่หน้าเดียวกับบัญชี HIS ด้วยชื่อผู้ใช้ <b className="font-mono">{tempShown.username}</b></li>
+                {tempShown.mustChange && <li>ผู้ใช้จะถูกให้ตั้งรหัสใหม่ของตัวเองทันทีที่เข้าสู่ระบบ</li>}
+              </ul>
+            </div>
+          )}
+          <DialogFooter><Button onClick={() => setTempShown(null)}>รับทราบ</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

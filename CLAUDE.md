@@ -45,6 +45,8 @@ Next.js 15 (App Router, `basePath: /hisreport-app`) + TypeScript, Tailwind v4 + 
 - `src/lib/his-auth.ts`: `hi.dct` — `dct` = ชื่อผู้ใช้ (เทียบตรงตัวพิมพ์), `statusdct='1'` = ระงับ, รหัสผ่าน → CRC-16/CCITT-FALSE ฐานสิบ เทียบ `TRIM(psswrd)` (ลอง UTF-8 และ TIS-620 ถ้ามีอักขระไทย)
 - ห้ามส่ง/แสดง/log ค่า `psswrd` เด็ดขาด — `searchHisUsers()` ไม่ดึงคอลัมน์นี้
 - `authenticate()`: บัญชี local ใช้ bcrypt, นอกนั้นตรวจกับ HIS; login HIS ครั้งแรกสร้าง `app_user` อัตโนมัติพร้อม Role "เจ้าหน้าที่" (`DEFAULT_HIS_ROLE`)
+- บัญชี local (ผู้ไม่มีบัญชี HIS): ผู้ดูแลสร้างที่ ผู้ใช้และสิทธิ์ (`POST /api/admin/users`) — ห้ามใช้ชื่อที่มีใน `hi.dct` (`hisUserExists()`, กันแย่งบัญชี HIS), สุ่มรหัสชั่วคราว (`tempPassword()` แสดงครั้งเดียว), กฎรหัส `passwordProblem()` (`src/lib/password.ts`); `app_user.must_change_pw` → `requireUser()` ส่งไป `/change-password` และ `apiUser()` ปฏิเสธจนกว่าจะเปลี่ยนรหัส (`PUT /api/me/password`); ตั้ง/เปลี่ยนรหัสแล้ว `password_changed_at` ทำให้ session ที่ออกก่อนหน้าใช้ไม่ได้ (เวลาจาก Node ตรงกับ `iat`)
+- migrate: คอลัมน์ที่เพิ่มภายหลังในตารางเดิมใช้ `ensureColumn()` ใน `scripts/migrate.mjs` (CREATE TABLE IF NOT EXISTS ไม่แก้ตารางเดิม)
 - จำกัด login ผิด: 5 ครั้ง/ชื่อผู้ใช้ หรือ 20 ครั้ง/IP ใน 15 นาที (นับจาก `audit_log` action `login_fail`) — ผู้ดูแลเปิด/ปิดได้ที่ ผู้ใช้และสิทธิ์ → แท็บความปลอดภัย (`app_setting.login_lockout`, ค่าเริ่มต้นเปิด, `src/lib/settings.ts`)
 - `hi.dct.dct` เป็น `tis620_bin` (แยกตัวพิมพ์: มีทั้ง `G7` และ `g7`) → `app_user.username` ต้องเป็น `utf8mb4_bin`
 - ทดสอบกับ HIS จริงแล้ว (2026-10-12): ไม่พบผู้ใช้ / รหัสผิด / ถูกระงับ ทำงานถูก — ยังไม่ได้ลอง login สำเร็จด้วยบัญชีจริง (ต้องให้ผู้ใช้ลองเอง)

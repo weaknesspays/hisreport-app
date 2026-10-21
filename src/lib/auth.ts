@@ -20,6 +20,9 @@ export type CurrentUser = {
   canViewPerson: boolean;
   canAuthor: boolean;
   isAdmin: boolean;
+  authSource: "his" | "local";
+  /** บัญชี local ที่ผู้ดูแลตั้ง/รีเซ็ตรหัสให้ — ต้องเปลี่ยนรหัสก่อนใช้งาน */
+  mustChangePassword: boolean;
   theme: ThemeMode;
   color: ThemeColor;
 };
@@ -30,11 +33,14 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   const s = await verifySession(jar.get(SESSION_COOKIE)?.value);
   if (!s) return null;
 
-  const u = await one<{ id: number; username: string; display_name: string; department: string | null; theme: string | null; color: string | null }>(
-    `SELECT u.id, u.username, u.display_name, u.department, st.theme, st.color
+  const u = await one<{ id: number; username: string; display_name: string; department: string | null; auth_source: "his" | "local"; must_change_pw: number; pw_changed: number | null; theme: string | null; color: string | null }>(
+    `SELECT u.id, u.username, u.display_name, u.department, u.auth_source, u.must_change_pw,
+            UNIX_TIMESTAMP(u.password_changed_at) AS pw_changed, st.theme, st.color
      FROM app_user u LEFT JOIN user_setting st ON st.user_id = u.id
      WHERE u.id = ? AND u.is_active = 1`, [s.uid]);
   if (!u) return null;
+  // เปลี่ยน/รีเซ็ตรหัสแล้ว → session ที่ออกก่อนหน้านั้นใช้ไม่ได้ (เช่น เครื่องอื่นที่ยัง login ค้าง)
+  if (u.pw_changed && s.iat < Math.floor(Number(u.pw_changed))) return null;
 
   const roles = await rows<{ id: number; name: string; can_export: number; can_view_person: number; can_author: number; is_admin: number }>(
     `SELECT r.id, r.name, r.can_export, r.can_view_person, r.can_author, r.is_admin
@@ -61,6 +67,8 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
     canViewPerson: isAdmin || roles.some((r) => r.can_view_person),
     canAuthor: isAdmin || roles.some((r) => r.can_author),
     isAdmin,
+    authSource: u.auth_source,
+    mustChangePassword: u.auth_source === "local" && !!u.must_change_pw,
     theme: isThemeMode(u.theme) ? u.theme : "system",
     color: isThemeColor(u.color) ? u.color : "blue",
   };
@@ -69,6 +77,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
 export async function requireUser() {
   const u = await getCurrentUser();
   if (!u) redirect("/login");
+  if (u.mustChangePassword) redirect("/change-password");
   return u;
 }
 
@@ -81,7 +90,7 @@ export async function requireAdmin() {
 /** สำหรับ API route: คืน null แทนการ redirect */
 export async function apiUser(opts: { admin?: boolean; author?: boolean } = {}) {
   const u = await getCurrentUser();
-  if (!u) return null;
+  if (!u || u.mustChangePassword) return null; // ต้องเปลี่ยนรหัสก่อน — ใช้ได้แค่ /api/me/password
   if (opts.admin && !u.isAdmin) return null;
   if (opts.author && !u.canAuthor) return null;
   return u;

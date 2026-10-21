@@ -100,7 +100,7 @@ const TITLES: [string, string][] = [
   ["/search", "ค้นหารายงาน"],
   ["/saved", "แฟ้มที่บันทึกไว้"],
   ["/requests", "ขอรายงานใหม่"],
-  ["/settings", "ตั้งค่าการแสดงผล"],
+  ["/settings", "ตั้งค่า"],
   ["/reports/", "รายงาน"],
   ["/admin/reports", "จัดการรายงาน"],
   ["/admin/groups", "หัวข้อรายงาน"],
@@ -179,7 +179,7 @@ export function AppShell({ groups, user, children }: { groups: ShellGroup[]; use
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild><Link href="/requests"><ClipboardList /> {user.isAdmin ? "คำขอทั้งหมด" : "คำขอของฉัน"}</Link></DropdownMenuItem>
-                <DropdownMenuItem asChild><Link href="/settings"><Settings /> ตั้งค่าการแสดงผล</Link></DropdownMenuItem>
+                <DropdownMenuItem asChild><Link href="/settings"><Settings /> ตั้งค่า / รหัสผ่าน</Link></DropdownMenuItem>
                 <DropdownMenuItem onClick={logout}><LogOut /> ออกจากระบบ</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

@@ -10,7 +10,9 @@ CREATE TABLE IF NOT EXISTS app_user (
     password_hash VARCHAR(255) NULL COMMENT 'ใช้เฉพาะ auth_source=local',
     is_active     TINYINT(1) NOT NULL DEFAULT 1,
     last_login    DATETIME NULL,
-    created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    must_change_pw      TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'บัญชี local: ต้องเปลี่ยนรหัสก่อนใช้งาน (หลังผู้ดูแลตั้ง/รีเซ็ตรหัส)',
+    password_changed_at DATETIME NULL COMMENT 'session ที่ออกก่อนเวลานี้ใช้ไม่ได้ (รีเซ็ต/เปลี่ยนรหัส)'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS role (

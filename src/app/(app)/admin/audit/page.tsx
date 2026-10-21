@@ -31,6 +31,8 @@ const ACTIONS: Record<string, { label: string; cls?: string }> = {
   edit_user: { label: "แก้ไขผู้ใช้", cls: "border-warning/50 text-warning" },
   edit_group: { label: "แก้ไขหัวข้อ" },
   edit_setting: { label: "แก้ไขค่าตั้งระบบ", cls: "border-warning/50 text-warning" },
+  change_password: { label: "เปลี่ยนรหัสผ่าน" },
+  reset_password: { label: "ตั้ง/รีเซ็ตรหัสผ่าน", cls: "border-warning/50 text-warning" },
   save_result: { label: "บันทึกแฟ้มผล" },
   view_saved: { label: "เปิดแฟ้มที่บันทึก" },
   export_saved: { label: "Export แฟ้มที่บันทึก", cls: "border-success/40 text-success" },

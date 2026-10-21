@@ -73,3 +73,12 @@ export async function searchHisUsers(q: string) {
     suspended: String(r.statusdct ?? "").trim() === "1",
   }));
 }
+
+/**
+ * มีชื่อผู้ใช้นี้ใน hi.dct หรือไม่ — เทียบตรงตัวพิมพ์ (G7 ≠ g7) เหมือน hisAuthenticate
+ * (การเทียบ = ใน SQL อาจไม่แยกตัวพิมพ์ตาม collation ของ connection จึงเทียบซ้ำใน JS) · ไม่ดึง psswrd
+ */
+export async function hisUserExists(username: string) {
+  const [r] = await hisDb().query<RowDataPacket[]>("SELECT dct FROM dct WHERE dct = ? LIMIT 20", [username]);
+  return r.some((x) => String(x.dct) === username);
+}

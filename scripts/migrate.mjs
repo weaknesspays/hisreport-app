@@ -18,6 +18,17 @@ const schema = fs.readFileSync(path.join(root, "db", "01_schema.sql"), "utf8");
 await conn.query(schema);
 console.log("✓ สร้าง/ตรวจตารางแล้ว");
 
+// คอลัมน์ที่เพิ่มภายหลังในตารางเดิม — CREATE TABLE IF NOT EXISTS ไม่แก้ตารางที่มีอยู่แล้ว จึงเติมให้ที่นี่ (ทำซ้ำได้ปลอดภัย)
+async function ensureColumn(table, column, ddl) {
+  const [[r]] = await conn.query(
+    "SELECT COUNT(*) AS n FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?", [table, column]);
+  if (Number(r.n)) return;
+  await conn.query(`ALTER TABLE \`${table}\` ADD COLUMN ${ddl}`);
+  console.log(`✓ เพิ่มคอลัมน์ ${table}.${column}`);
+}
+await ensureColumn("app_user", "must_change_pw", "must_change_pw TINYINT(1) NOT NULL DEFAULT 0");
+await ensureColumn("app_user", "password_changed_at", "password_changed_at DATETIME NULL");
+
 // Role เริ่มต้น
 const roles = [
   ["ผู้ดูแลระบบ", 1, 1, 1, 1],
