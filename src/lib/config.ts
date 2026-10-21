@@ -28,3 +28,6 @@ export function isThemeColor(v: unknown): v is ThemeColor {
 export function isThemeMode(v: unknown): v is ThemeMode {
   return v === "light" || v === "dark" || v === "system";
 }
+
+/** เครดิตผู้พัฒนา — แสดงตัวเล็กท้ายเมนูด้านข้าง */
+export const DEVELOPER = { title: "ผู้พัฒนา", name: "นายเฉลิมพล ศรีคำ", position: "นักวิชาการคอมพิวเตอร์ชำนาญการ", org: "โรงพยาบาลศรีเมืองใหม่" };

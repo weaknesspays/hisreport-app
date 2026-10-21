@@ -17,7 +17,7 @@ import {
 import { ThemeMenu } from "@/components/theme/theme-menu";
 import { RequestDialog } from "@/components/request-dialog";
 import { GroupIcon } from "./icons";
-import { APP_NAME, api } from "@/lib/config";
+import { APP_NAME, DEVELOPER, api } from "@/lib/config";
 import { cn } from "@/lib/utils";
 
 export type ShellGroup = { id: number; name: string; icon: string; category: string | null; report_count: number };
@@ -82,6 +82,12 @@ function SidebarBody({ groups, user, onNavigate }: { groups: ShellGroup[]; user:
           </>}
         </Section>
       )}
+      <div className="mt-6 border-t border-sidebar-border px-2.5 pb-1 pt-3 text-[11px] leading-relaxed text-sidebar-muted">
+        <div className="opacity-80">{DEVELOPER.title}</div>
+        <div className="font-medium text-sidebar-foreground/80">{DEVELOPER.name}</div>
+        <div>{DEVELOPER.position}</div>
+        <div>{DEVELOPER.org}</div>
+      </div>
     </nav>
   );
 }
